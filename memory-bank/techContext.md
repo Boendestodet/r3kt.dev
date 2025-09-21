@@ -52,6 +52,8 @@
 - **Code Editor**: Syntax highlighting and file management
 - **Console Interface**: Command history and interactive input
 - **AI Chat Integration**: Real-time chat with prompt enhancement
+- **Advanced Textarea**: Intelligent auto-resize with dynamic height management
+- **Enhanced Prompt System**: Full text visibility with intelligent height detection
 
 ## Development Environment
 

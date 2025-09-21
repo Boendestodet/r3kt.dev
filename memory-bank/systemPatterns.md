@@ -180,6 +180,8 @@ Interactive Development (Chat, Console, Code Editor) → File Management → AI 
 - **Message History**: Persistent chat history with timestamps
 - **Typing Indicators**: Real-time feedback during AI processing
 - **Context Awareness**: AI responses based on project context
+- **Auto-Resize Integration**: Seamless textarea resizing after enhanced prompts
+- **Full Text Visibility**: Ensures enhanced prompts are fully visible without scrolling
 
 ### 4. Code Editor Patterns
 - **File Management**: Tree-based file explorer with folder structure
@@ -199,6 +201,8 @@ Interactive Development (Chat, Console, Code Editor) → File Management → AI 
 - **Glow Effects**: Elegant orange glow effects for visual appeal
 - **Responsive Design**: Mobile-friendly interface with proper spacing
 - **State Management**: React hooks for complex state management
+- **Auto-Resize Logic**: Intelligent height management with multiple strategies
+- **Dynamic Sizing**: Adaptive height based on content length (512px normal, 800px for long text)
 
 ## Component Relationships
 

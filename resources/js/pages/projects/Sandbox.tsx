@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Head, router } from "@inertiajs/react"
 import { Textarea } from '@/components/ui/textarea'
 
@@ -179,6 +179,55 @@ export default function SandboxPage({ project }: Props) {
   const [isAiTyping, setIsAiTyping] = useState(false)
   const [fileSystem, setFileSystem] = useState<FileNode[]>(fileStructure)
   const [isEnhancing, setIsEnhancing] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-resize textarea function
+  const autoResizeTextarea = () => {
+    if (textareaRef.current) {
+      console.log('Auto-resizing textarea, current height:', textareaRef.current.style.height);
+      
+      // Force a complete recalculation by temporarily removing height constraints
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.maxHeight = 'none';
+      
+      // Get the natural height
+      const scrollHeight = textareaRef.current.scrollHeight;
+      console.log('Natural scrollHeight:', scrollHeight);
+      
+      // Set new height with much larger max (512px = 32rem) to accommodate long enhanced text
+      let newHeight = Math.min(scrollHeight, 512);
+      
+      // If text is very long, allow it to grow even more (up to 800px)
+      if (scrollHeight > 512) {
+        console.log('⚠️ Very long text detected! Needed height:', scrollHeight + 'px');
+        newHeight = Math.min(scrollHeight, 800); // Allow up to 800px for very long text
+        textareaRef.current.style.maxHeight = '800px';
+      } else {
+        textareaRef.current.style.maxHeight = '512px';
+      }
+      
+      textareaRef.current.style.height = newHeight + 'px';
+      
+      console.log('Final height set:', newHeight + 'px', 'scrollHeight was:', scrollHeight);
+    } else {
+      console.log('Textarea ref not found');
+    }
+  }
+
+  // Auto-resize textarea when content changes
+  useEffect(() => {
+    // Use a small timeout to ensure the DOM is updated
+    const timeoutId = setTimeout(() => {
+      autoResizeTextarea();
+    }, 10);
+    
+    return () => clearTimeout(timeoutId);
+  }, [chatInput]);
+
+  // Auto-resize on component mount
+  useEffect(() => {
+    autoResizeTextarea();
+  }, []);
 
   // Mock console output
   useEffect(() => {
@@ -707,6 +756,32 @@ What would you like me to build?`
       const enhanced = enhanceUserPrompt(chatInput)
       setChatInput(enhanced)
       setIsEnhancing(false)
+      
+      // Force auto-resize using requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
+        autoResizeTextarea();
+        
+        // Try multiple times to ensure it resizes properly
+        setTimeout(() => {
+          autoResizeTextarea();
+        }, 50);
+        
+        setTimeout(() => {
+          autoResizeTextarea();
+        }, 100);
+        
+        setTimeout(() => {
+          autoResizeTextarea();
+        }, 200);
+        
+        // Force resize by directly setting the textarea value and triggering input event
+        if (textareaRef.current) {
+          const currentValue = textareaRef.current.value;
+          textareaRef.current.value = '';
+          textareaRef.current.value = currentValue;
+          autoResizeTextarea();
+        }
+      });
     }, 1500)
   }
 
@@ -1172,10 +1247,11 @@ Please provide a complete, working implementation with examples and usage instru
                   <div className="border-t border-slate-700/50 bg-slate-800/30 p-4">
                     <form onSubmit={handleChatSubmit} className="flex gap-3">
                       <Textarea
+                        ref={textareaRef}
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         placeholder="Tell me what you want to build..."
-                        className="flex-1 bg-slate-700/50 text-white placeholder-slate-400 focus:ring-0 focus:shadow-lg focus:shadow-orange-500/25 resize-none min-h-[44px] max-h-32 overflow-hidden"
+                        className="flex-1 bg-slate-700/50 text-white placeholder-slate-400 focus:ring-0 focus:shadow-lg focus:shadow-orange-500/25 resize-none min-h-[44px] max-h-[512px] overflow-hidden"
                         style={{
                           border: '1px solid rgba(249, 115, 22, 0.3)',
                           outline: 'none',
@@ -1184,14 +1260,6 @@ Please provide a complete, working implementation with examples and usage instru
                           borderRightColor: 'rgba(249, 115, 22, 0.3)',
                           borderBottomColor: 'rgba(249, 115, 22, 0.3)',
                           borderLeftColor: 'rgba(249, 115, 22, 0.3)'
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.border = '1px solid rgba(249, 115, 22, 0.6)';
-                          e.target.style.borderTopColor = 'rgba(249, 115, 22, 0.6)';
-                          e.target.style.borderRightColor = 'rgba(249, 115, 22, 0.6)';
-                          e.target.style.borderBottomColor = 'rgba(249, 115, 22, 0.6)';
-                          e.target.style.borderLeftColor = 'rgba(249, 115, 22, 0.6)';
-                          e.target.style.boxShadow = '0 0 12px rgba(249, 115, 22, 0.3)';
                         }}
                         onBlur={(e) => {
                           e.target.style.border = '1px solid rgba(249, 115, 22, 0.3)';
@@ -1204,9 +1272,20 @@ Please provide a complete, working implementation with examples and usage instru
                         disabled={isAiTyping || isEnhancing}
                         rows={3}
                         onInput={(e) => {
+                          autoResizeTextarea();
+                        }}
+                        onFocus={(e) => {
+                          // Auto-resize on focus as well
+                          autoResizeTextarea();
+                          
+                          // Focus border and glow effects
                           const target = e.target as HTMLTextAreaElement;
-                          target.style.height = 'auto';
-                          target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+                          target.style.border = '1px solid rgba(249, 115, 22, 0.6)';
+                          target.style.borderTopColor = 'rgba(249, 115, 22, 0.6)';
+                          target.style.borderRightColor = 'rgba(249, 115, 22, 0.6)';
+                          target.style.borderBottomColor = 'rgba(249, 115, 22, 0.6)';
+                          target.style.borderLeftColor = 'rgba(249, 115, 22, 0.6)';
+                          target.style.boxShadow = '0 0 12px rgba(249, 115, 22, 0.3)';
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {

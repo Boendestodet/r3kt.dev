@@ -47,6 +47,8 @@ An AI-powered platform that converts natural language descriptions into fully fu
 - **Code Editor**: Full-featured editor with syntax highlighting and file management
 - **Interactive Console**: Command-line interface with history navigation
 - **Deployment Modal**: Visual progress tracking with automatic redirection
+- **Advanced Textarea**: Intelligent auto-resize with dynamic height management (512px normal, 800px for long text)
+- **Enhanced Prompt System**: Full text visibility with intelligent height detection
 
 ### 4. User Experience
 - Intuitive prompt-based interface

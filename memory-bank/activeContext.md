@@ -14,6 +14,7 @@ The project is in **production-ready phase** with core AI integration and Docker
 - **✅ Sandbox Interface**: Interactive development environment with chat, console, and code editor
 - **✅ Deployment Flow**: Modal-based deployment with progress tracking and sandbox redirection
 - **✅ AI Chat System**: Intelligent chat interface with prompt enhancement capabilities
+- **✅ Enhanced Textarea**: Advanced auto-resize functionality with intelligent height management
 
 ## Recent Discoveries
 - **Project Type**: AI-powered website builder (Lovable clone)
@@ -51,6 +52,8 @@ Based on the README and project structure, the application includes:
 - ✅ AI chat interface with prompt enhancement
 - ✅ Interactive console with command history
 - ✅ Code editor with syntax highlighting and file management
+- ✅ Advanced textarea with intelligent auto-resize (512px normal, 800px for long text)
+- ✅ Enhanced prompt functionality with full text visibility
 
 ### Project Structure
 - **Backend**: Well-organized Laravel 12 application with services, policies, and jobs

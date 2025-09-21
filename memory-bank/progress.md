@@ -43,7 +43,9 @@
 - Interactive sandbox interface with chat, console, and code editor
 - Deployment modal with progress tracking
 - AI chat interface with prompt enhancement
-- Glowing orange textarea with auto-resize functionality
+- Glowing orange textarea with intelligent auto-resize functionality
+- Advanced textarea with dynamic height management (512px normal, 800px for long text)
+- Enhanced prompt functionality with full text visibility
 
 ### Development Tools
 - Vite for asset bundling and HMR
@@ -166,6 +168,8 @@
 - **UI Components**: Reusable Textarea component with custom styling and auto-resize functionality
 - **Glowing Effects**: Elegant orange glow effects for enhanced visual appeal
 - **Responsive Design**: Mobile-friendly interface with proper spacing and layout
+- **Advanced Textarea**: Intelligent auto-resize with dynamic height management (512px normal, 800px for long text)
+- **Enhanced Prompt System**: Full text visibility with intelligent height detection and multiple resize strategies
 
 ### Memory Bank Establishment ✅
 - Created comprehensive project documentation
