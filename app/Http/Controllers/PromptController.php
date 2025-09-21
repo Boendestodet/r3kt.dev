@@ -10,7 +10,6 @@ use App\Services\CollaborationService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class PromptController extends Controller
 {
@@ -21,6 +20,7 @@ class PromptController extends Controller
     ) {
         //
     }
+
     public function store(StorePromptRequest $request, Project $project): JsonResponse
     {
         $this->authorize('update', $project);
@@ -28,6 +28,7 @@ class PromptController extends Controller
         $prompt = $project->prompts()->create([
             'prompt' => $request->prompt,
             'status' => 'pending',
+            'auto_start_container' => $request->boolean('auto_start_container', false),
         ]);
 
         // Track AI generation start
@@ -36,9 +37,14 @@ class PromptController extends Controller
         // Queue AI processing job
         ProcessPromptJob::dispatch($prompt);
 
+        $message = $request->boolean('auto_start_container', false)
+            ? 'Prompt submitted successfully! AI is processing your request and will automatically start a container when ready.'
+            : 'Prompt submitted successfully! AI is processing your request.';
+
         return response()->json([
             'prompt' => $prompt,
-            'message' => 'Prompt submitted successfully! AI is processing your request.',
+            'message' => $message,
+            'auto_start_container' => $request->boolean('auto_start_container', false),
         ]);
     }
 

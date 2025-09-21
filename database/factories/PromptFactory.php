@@ -17,7 +17,14 @@ class PromptFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'project_id' => \App\Models\Project::factory(),
+            'prompt' => $this->faker->sentence(10),
+            'response' => null,
+            'status' => 'pending',
+            'metadata' => null,
+            'tokens_used' => null,
+            'processed_at' => null,
+            'auto_start_container' => false,
         ];
     }
 }

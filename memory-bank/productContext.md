@@ -12,8 +12,10 @@ An AI-powered platform that converts natural language descriptions into fully fu
 1. **Onboarding**: Quick registration and project creation
 2. **Prompt Input**: Describe desired website in natural language
 3. **AI Processing**: System analyzes prompt and generates appropriate website type
-4. **Preview & Customize**: Review generated website and make adjustments
-5. **Deploy & Share**: Publish website and share with others
+4. **Deployment**: Modal-based deployment with progress tracking
+5. **Sandbox Development**: Interactive development environment with chat, console, and code editor
+6. **Preview & Customize**: Review generated website and make adjustments
+7. **Deploy & Share**: Publish website and share with others
 
 ### Key User Personas
 - **The Entrepreneur**: Needs a quick landing page for their startup
@@ -39,12 +41,20 @@ An AI-powered platform that converts natural language descriptions into fully fu
 - Track project status (Draft, Building, Ready, Error)
 - Organize projects by type and date
 
-### 3. User Experience
+### 3. Interactive Development Environment
+- **Sandbox Interface**: Complete development environment with chat, console, and code editor
+- **AI Chat Integration**: Intelligent chat with prompt enhancement capabilities
+- **Code Editor**: Full-featured editor with syntax highlighting and file management
+- **Interactive Console**: Command-line interface with history navigation
+- **Deployment Modal**: Visual progress tracking with automatic redirection
+
+### 4. User Experience
 - Intuitive prompt-based interface
 - Real-time preview capabilities
 - Responsive design for all devices
 - Modern, clean UI with smooth animations
 - Fast loading and smooth navigation
+- Glowing visual effects for enhanced appeal
 
 ## Success Metrics
 - User engagement: Time spent on platform, projects created

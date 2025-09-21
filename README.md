@@ -35,6 +35,13 @@ A powerful AI-powered website builder that generates complete Next.js projects f
 - Status tracking (Draft, Building, Ready, Error)
 - Generated code storage and management
 
+### 🐳 Live Preview System
+- **Real Docker Integration**: Live container management with Next.js development server
+- **No nginx Required**: Uses Next.js built-in server for optimal performance
+- **Port Management**: Automatic port allocation and conflict resolution
+- **Live Previews**: Real-time website previews in isolated containers
+- **Resource Cleanup**: Automatic cleanup of old containers and images
+
 ## 🏗️ Architecture
 
 ```
@@ -47,6 +54,8 @@ Laravel 12 Backend
 MySQL Database
     ↕
 AI Services (OpenAI + Claude)
+    ↕
+Docker Containers (Next.js Dev Server)
 ```
 
 ## 🚀 Quick Start
@@ -56,7 +65,9 @@ AI Services (OpenAI + Claude)
 - Composer
 - Node.js 18+
 - MySQL 8.0+
-- Docker (for container management)
+- Docker (for live previews)
+- OpenAI API key
+- Claude AI API key
 
 ### Installation
 
@@ -156,9 +167,9 @@ php artisan test --coverage
 │   └── Providers/           # Service providers
 ├── resources/
 │   ├── js/
-│   │   ├── Pages/           # Inertia.js pages
-│   │   ├── Components/      # React components
-│   │   └── Layouts/         # Page layouts
+│   │   ├── pages/           # Inertia.js pages
+│   │   ├── components/      # React components
+│   │   └── layouts/         # Page layouts
 │   └── css/                 # Stylesheets
 ├── storage/
 │   └── app/projects/        # Generated project files
@@ -231,12 +242,31 @@ php artisan test --filter=AI # Run AI-specific tests
 
 ## 🐳 Docker Support
 
-The platform includes Docker support for generated Next.js projects:
+The platform includes comprehensive Docker support for live previews:
 
-- **Automatic Dockerfile generation** for each project
-- **Container lifecycle management** (start/stop/restart)
-- **Live preview URLs** for generated websites
-- **Resource monitoring** and cleanup
+### Container Management
+- **Real Docker Integration**: Live container management with Next.js development server
+- **No nginx Required**: Uses Next.js built-in server for optimal performance
+- **Port Management**: Automatic port allocation and conflict resolution
+- **Live Previews**: Real-time website previews in isolated containers
+- **Resource Cleanup**: Automatic cleanup of old containers and images
+
+### API Endpoints
+- `GET /api/docker/info` - Docker system information
+- `POST /api/projects/{project}/docker/start` - Start container for project
+- `GET /api/projects/{project}/docker/preview` - Get preview URL
+- `POST /api/containers/{container}/docker/stop` - Stop container
+- `POST /api/containers/{container}/docker/restart` - Restart container
+- `GET /api/containers/{container}/docker/status` - Container health & stats
+- `GET /api/containers/{container}/docker/logs` - Container logs
+- `GET /api/docker/containers` - List running containers
+- `POST /api/docker/cleanup` - Cleanup old resources
+
+### Frontend Component
+- **DockerManager React Component**: Complete UI for Docker management
+- **Real-time Status**: Live updates of container status and Docker info
+- **Action Buttons**: Start, stop, restart, and cleanup operations
+- **Error Handling**: User-friendly error messages and loading states
 
 ## 📊 Performance
 

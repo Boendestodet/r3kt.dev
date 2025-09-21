@@ -185,166 +185,6 @@ showForm.head = (args: { container: number | { id: number } } | [container: numb
 show.form = showForm
 
 /**
-* @see \App\Http\Controllers\ContainerController::start
-* @see app/Http/Controllers/ContainerController.php:48
-* @route '/containers/{container}/start'
-*/
-export const start = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
-    url: start.url(args, options),
-    method: 'post',
-})
-
-start.definition = {
-    methods: ["post"],
-    url: '/containers/{container}/start',
-} satisfies RouteDefinition<["post"]>
-
-/**
-* @see \App\Http\Controllers\ContainerController::start
-* @see app/Http/Controllers/ContainerController.php:48
-* @route '/containers/{container}/start'
-*/
-start.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
-    if (typeof args === 'string' || typeof args === 'number') {
-        args = { container: args }
-    }
-
-    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
-        args = { container: args.id }
-    }
-
-    if (Array.isArray(args)) {
-        args = {
-            container: args[0],
-        }
-    }
-
-    args = applyUrlDefaults(args)
-
-    const parsedArgs = {
-        container: typeof args.container === 'object'
-        ? args.container.id
-        : args.container,
-    }
-
-    return start.definition.url
-            .replace('{container}', parsedArgs.container.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
-
-/**
-* @see \App\Http\Controllers\ContainerController::start
-* @see app/Http/Controllers/ContainerController.php:48
-* @route '/containers/{container}/start'
-*/
-start.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
-    url: start.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ContainerController::start
-* @see app/Http/Controllers/ContainerController.php:48
-* @route '/containers/{container}/start'
-*/
-const startForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: start.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ContainerController::start
-* @see app/Http/Controllers/ContainerController.php:48
-* @route '/containers/{container}/start'
-*/
-startForm.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: start.url(args, options),
-    method: 'post',
-})
-
-start.form = startForm
-
-/**
-* @see \App\Http\Controllers\ContainerController::stop
-* @see app/Http/Controllers/ContainerController.php:66
-* @route '/containers/{container}/stop'
-*/
-export const stop = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
-    url: stop.url(args, options),
-    method: 'post',
-})
-
-stop.definition = {
-    methods: ["post"],
-    url: '/containers/{container}/stop',
-} satisfies RouteDefinition<["post"]>
-
-/**
-* @see \App\Http\Controllers\ContainerController::stop
-* @see app/Http/Controllers/ContainerController.php:66
-* @route '/containers/{container}/stop'
-*/
-stop.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
-    if (typeof args === 'string' || typeof args === 'number') {
-        args = { container: args }
-    }
-
-    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
-        args = { container: args.id }
-    }
-
-    if (Array.isArray(args)) {
-        args = {
-            container: args[0],
-        }
-    }
-
-    args = applyUrlDefaults(args)
-
-    const parsedArgs = {
-        container: typeof args.container === 'object'
-        ? args.container.id
-        : args.container,
-    }
-
-    return stop.definition.url
-            .replace('{container}', parsedArgs.container.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
-
-/**
-* @see \App\Http\Controllers\ContainerController::stop
-* @see app/Http/Controllers/ContainerController.php:66
-* @route '/containers/{container}/stop'
-*/
-stop.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
-    url: stop.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ContainerController::stop
-* @see app/Http/Controllers/ContainerController.php:66
-* @route '/containers/{container}/stop'
-*/
-const stopForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: stop.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ContainerController::stop
-* @see app/Http/Controllers/ContainerController.php:66
-* @route '/containers/{container}/stop'
-*/
-stopForm.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: stop.url(args, options),
-    method: 'post',
-})
-
-stop.form = stopForm
-
-/**
 * @see \App\Http\Controllers\ContainerController::destroy
 * @see app/Http/Controllers/ContainerController.php:84
 * @route '/containers/{container}'
@@ -435,76 +275,260 @@ destroyForm.delete = (args: { container: number | { id: number } } | [container:
 destroy.form = destroyForm
 
 /**
-* @see \App\Http\Controllers\DeploymentController::index
-* @see app/Http/Controllers/DeploymentController.php:226
-* @route '/api/containers'
+* @see \App\Http\Controllers\DockerController::stop
+* @see app/Http/Controllers/DockerController.php:125
+* @route '/api/containers/{container}/stop'
 */
-export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: index.url(options),
-    method: 'get',
+export const stop = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: stop.url(args, options),
+    method: 'post',
 })
 
-index.definition = {
-    methods: ["get","head"],
-    url: '/api/containers',
-} satisfies RouteDefinition<["get","head"]>
+stop.definition = {
+    methods: ["post"],
+    url: '/api/containers/{container}/stop',
+} satisfies RouteDefinition<["post"]>
 
 /**
-* @see \App\Http\Controllers\DeploymentController::index
-* @see app/Http/Controllers/DeploymentController.php:226
-* @route '/api/containers'
+* @see \App\Http\Controllers\DockerController::stop
+* @see app/Http/Controllers/DockerController.php:125
+* @route '/api/containers/{container}/stop'
 */
-index.url = (options?: RouteQueryOptions) => {
-    return index.definition.url + queryParams(options)
+stop.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { container: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { container: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            container: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        container: typeof args.container === 'object'
+        ? args.container.id
+        : args.container,
+    }
+
+    return stop.definition.url
+            .replace('{container}', parsedArgs.container.toString())
+            .replace(/\/+$/, '') + queryParams(options)
 }
 
 /**
-* @see \App\Http\Controllers\DeploymentController::index
-* @see app/Http/Controllers/DeploymentController.php:226
-* @route '/api/containers'
+* @see \App\Http\Controllers\DockerController::stop
+* @see app/Http/Controllers/DockerController.php:125
+* @route '/api/containers/{container}/stop'
 */
-index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: index.url(options),
+stop.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: stop.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::stop
+* @see app/Http/Controllers/DockerController.php:125
+* @route '/api/containers/{container}/stop'
+*/
+const stopForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: stop.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::stop
+* @see app/Http/Controllers/DockerController.php:125
+* @route '/api/containers/{container}/stop'
+*/
+stopForm.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: stop.url(args, options),
+    method: 'post',
+})
+
+stop.form = stopForm
+
+/**
+* @see \App\Http\Controllers\DockerController::restart
+* @see app/Http/Controllers/DockerController.php:173
+* @route '/api/containers/{container}/restart'
+*/
+export const restart = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: restart.url(args, options),
+    method: 'post',
+})
+
+restart.definition = {
+    methods: ["post"],
+    url: '/api/containers/{container}/restart',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\DockerController::restart
+* @see app/Http/Controllers/DockerController.php:173
+* @route '/api/containers/{container}/restart'
+*/
+restart.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { container: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { container: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            container: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        container: typeof args.container === 'object'
+        ? args.container.id
+        : args.container,
+    }
+
+    return restart.definition.url
+            .replace('{container}', parsedArgs.container.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\DockerController::restart
+* @see app/Http/Controllers/DockerController.php:173
+* @route '/api/containers/{container}/restart'
+*/
+restart.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: restart.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::restart
+* @see app/Http/Controllers/DockerController.php:173
+* @route '/api/containers/{container}/restart'
+*/
+const restartForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: restart.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::restart
+* @see app/Http/Controllers/DockerController.php:173
+* @route '/api/containers/{container}/restart'
+*/
+restartForm.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: restart.url(args, options),
+    method: 'post',
+})
+
+restart.form = restartForm
+
+/**
+* @see \App\Http\Controllers\DockerController::status
+* @see app/Http/Controllers/DockerController.php:223
+* @route '/api/containers/{container}/status'
+*/
+export const status = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: status.url(args, options),
+    method: 'get',
+})
+
+status.definition = {
+    methods: ["get","head"],
+    url: '/api/containers/{container}/status',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\DockerController::status
+* @see app/Http/Controllers/DockerController.php:223
+* @route '/api/containers/{container}/status'
+*/
+status.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { container: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { container: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            container: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        container: typeof args.container === 'object'
+        ? args.container.id
+        : args.container,
+    }
+
+    return status.definition.url
+            .replace('{container}', parsedArgs.container.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\DockerController::status
+* @see app/Http/Controllers/DockerController.php:223
+* @route '/api/containers/{container}/status'
+*/
+status.get = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: status.url(args, options),
     method: 'get',
 })
 
 /**
-* @see \App\Http\Controllers\DeploymentController::index
-* @see app/Http/Controllers/DeploymentController.php:226
-* @route '/api/containers'
+* @see \App\Http\Controllers\DockerController::status
+* @see app/Http/Controllers/DockerController.php:223
+* @route '/api/containers/{container}/status'
 */
-index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
-    url: index.url(options),
+status.head = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: status.url(args, options),
     method: 'head',
 })
 
 /**
-* @see \App\Http\Controllers\DeploymentController::index
-* @see app/Http/Controllers/DeploymentController.php:226
-* @route '/api/containers'
+* @see \App\Http\Controllers\DockerController::status
+* @see app/Http/Controllers/DockerController.php:223
+* @route '/api/containers/{container}/status'
 */
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
+const statusForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url(args, options),
     method: 'get',
 })
 
 /**
-* @see \App\Http\Controllers\DeploymentController::index
-* @see app/Http/Controllers/DeploymentController.php:226
-* @route '/api/containers'
+* @see \App\Http\Controllers\DockerController::status
+* @see app/Http/Controllers/DockerController.php:223
+* @route '/api/containers/{container}/status'
 */
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
+statusForm.get = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url(args, options),
     method: 'get',
 })
 
 /**
-* @see \App\Http\Controllers\DeploymentController::index
-* @see app/Http/Controllers/DeploymentController.php:226
-* @route '/api/containers'
+* @see \App\Http\Controllers\DockerController::status
+* @see app/Http/Controllers/DockerController.php:223
+* @route '/api/containers/{container}/status'
 */
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
+statusForm.head = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
             ...(options?.query ?? options?.mergeQuery ?? {}),
@@ -513,15 +537,121 @@ indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     method: 'get',
 })
 
-index.form = indexForm
+status.form = statusForm
+
+/**
+* @see \App\Http\Controllers\DockerController::logs
+* @see app/Http/Controllers/DockerController.php:269
+* @route '/api/containers/{container}/logs'
+*/
+export const logs = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: logs.url(args, options),
+    method: 'get',
+})
+
+logs.definition = {
+    methods: ["get","head"],
+    url: '/api/containers/{container}/logs',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\DockerController::logs
+* @see app/Http/Controllers/DockerController.php:269
+* @route '/api/containers/{container}/logs'
+*/
+logs.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { container: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { container: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            container: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        container: typeof args.container === 'object'
+        ? args.container.id
+        : args.container,
+    }
+
+    return logs.definition.url
+            .replace('{container}', parsedArgs.container.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\DockerController::logs
+* @see app/Http/Controllers/DockerController.php:269
+* @route '/api/containers/{container}/logs'
+*/
+logs.get = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: logs.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::logs
+* @see app/Http/Controllers/DockerController.php:269
+* @route '/api/containers/{container}/logs'
+*/
+logs.head = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: logs.url(args, options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::logs
+* @see app/Http/Controllers/DockerController.php:269
+* @route '/api/containers/{container}/logs'
+*/
+const logsForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: logs.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::logs
+* @see app/Http/Controllers/DockerController.php:269
+* @route '/api/containers/{container}/logs'
+*/
+logsForm.get = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: logs.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::logs
+* @see app/Http/Controllers/DockerController.php:269
+* @route '/api/containers/{container}/logs'
+*/
+logsForm.head = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: logs.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+logs.form = logsForm
 
 const containers = {
     store,
     show,
-    start,
-    stop,
     destroy,
-    index,
+    stop,
+    restart,
+    status,
+    logs,
 }
 
 export default containers

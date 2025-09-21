@@ -1,4 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
+import docker from './docker'
 /**
 * @see \App\Http\Controllers\ProjectController::index
 * @see app/Http/Controllers/ProjectController.php:27
@@ -713,6 +714,98 @@ duplicateForm.post = (args: { project: number | { id: number } } | [project: num
 duplicate.form = duplicateForm
 
 /**
+* @see routes/web.php:23
+* @route '/projects/{project}/sandbox'
+*/
+export const sandbox = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: sandbox.url(args, options),
+    method: 'get',
+})
+
+sandbox.definition = {
+    methods: ["get","head"],
+    url: '/projects/{project}/sandbox',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see routes/web.php:23
+* @route '/projects/{project}/sandbox'
+*/
+sandbox.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { project: args }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            project: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        project: args.project,
+    }
+
+    return sandbox.definition.url
+            .replace('{project}', parsedArgs.project.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see routes/web.php:23
+* @route '/projects/{project}/sandbox'
+*/
+sandbox.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: sandbox.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see routes/web.php:23
+* @route '/projects/{project}/sandbox'
+*/
+sandbox.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: sandbox.url(args, options),
+    method: 'head',
+})
+
+/**
+* @see routes/web.php:23
+* @route '/projects/{project}/sandbox'
+*/
+const sandboxForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: sandbox.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see routes/web.php:23
+* @route '/projects/{project}/sandbox'
+*/
+sandboxForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: sandbox.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see routes/web.php:23
+* @route '/projects/{project}/sandbox'
+*/
+sandboxForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: sandbox.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+sandbox.form = sandboxForm
+
+/**
 * @see \App\Http\Controllers\GalleryController::togglePublic
 * @see app/Http/Controllers/GalleryController.php:145
 * @route '/projects/{project}/toggle-public'
@@ -791,6 +884,86 @@ togglePublicForm.post = (args: { project: number | { id: number } } | [project: 
 })
 
 togglePublic.form = togglePublicForm
+
+/**
+* @see \App\Http\Controllers\DockerController::deploy
+* @see app/Http/Controllers/DockerController.php:360
+* @route '/api/projects/{project}/deploy'
+*/
+export const deploy = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: deploy.url(args, options),
+    method: 'post',
+})
+
+deploy.definition = {
+    methods: ["post"],
+    url: '/api/projects/{project}/deploy',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\DockerController::deploy
+* @see app/Http/Controllers/DockerController.php:360
+* @route '/api/projects/{project}/deploy'
+*/
+deploy.url = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { project: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { project: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            project: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        project: typeof args.project === 'object'
+        ? args.project.id
+        : args.project,
+    }
+
+    return deploy.definition.url
+            .replace('{project}', parsedArgs.project.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\DockerController::deploy
+* @see app/Http/Controllers/DockerController.php:360
+* @route '/api/projects/{project}/deploy'
+*/
+deploy.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: deploy.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::deploy
+* @see app/Http/Controllers/DockerController.php:360
+* @route '/api/projects/{project}/deploy'
+*/
+const deployForm = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: deploy.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::deploy
+* @see app/Http/Controllers/DockerController.php:360
+* @route '/api/projects/{project}/deploy'
+*/
+deployForm.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: deploy.url(args, options),
+    method: 'post',
+})
+
+deploy.form = deployForm
 
 /**
 * @see \App\Http\Controllers\SubdomainController::subdomain
@@ -1051,7 +1224,10 @@ const projects = {
     update,
     destroy,
     duplicate,
+    sandbox,
     togglePublic,
+    deploy,
+    docker,
     subdomain,
     customDomain,
     removeCustomDomain,

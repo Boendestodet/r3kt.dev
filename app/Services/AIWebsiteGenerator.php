@@ -2,11 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Prompt;
 use App\Models\Project;
-use App\Services\CollaborationService;
-use App\Services\OpenAIService;
-use App\Services\ClaudeAIService;
+use App\Models\Prompt;
 use Illuminate\Support\Facades\Log;
 
 class AIWebsiteGenerator
@@ -14,7 +11,8 @@ class AIWebsiteGenerator
     public function __construct(
         private CollaborationService $collaborationService,
         private OpenAIService $openAIService,
-        private ClaudeAIService $claudeAIService
+        private ClaudeAIService $claudeAIService,
+        private DockerService $dockerService
     ) {
         //
     }
@@ -29,15 +27,16 @@ class AIWebsiteGenerator
         try {
             // Try AI providers in order of preference
             $providers = $this->getAvailableProviders();
-            
+
             if (empty($providers)) {
                 Log::warning('No AI providers configured, falling back to mock generation');
                 $this->generateWithFallback($prompt);
+
                 return;
             }
 
             $lastException = null;
-            
+
             foreach ($providers as $provider) {
                 try {
                     Log::info("Attempting to generate website with {$provider['name']}");
@@ -68,25 +67,31 @@ class AIWebsiteGenerator
 
                     // Track AI generation completion
                     $this->collaborationService->aiGenerationCompleted($prompt->project, $prompt->project->user, 'completed');
-                    
+
+                    // Auto-start container if requested
+                    if ($prompt->auto_start_container) {
+                        $this->autoStartContainer($prompt->project);
+                    }
+
                     Log::info("Successfully generated website with {$provider['name']}");
+
                     return;
 
                 } catch (\Exception $e) {
-                    Log::warning("Failed to generate with {$provider['name']}: " . $e->getMessage());
+                    Log::warning("Failed to generate with {$provider['name']}: ".$e->getMessage());
                     $lastException = $e;
+
                     continue;
                 }
             }
 
             // If all providers failed, throw the last exception
             throw $lastException ?? new \Exception('All AI providers failed');
-
         } catch (\Exception $e) {
-            Log::error('All AI generation attempts failed: ' . $e->getMessage(), [
+            Log::error('All AI generation attempts failed: '.$e->getMessage(), [
                 'prompt_id' => $prompt->id,
                 'project_id' => $prompt->project_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             // Fallback to mock generation
@@ -130,8 +135,8 @@ class AIWebsiteGenerator
     private function generateWithFallback(Prompt $prompt): void
     {
         try {
-            Log::info('Using fallback mock generation for prompt: ' . $prompt->id);
-            
+            Log::info('Using fallback mock generation for prompt: '.$prompt->id);
+
             // Generate mock Next.js project based on the prompt
             $nextjsProject = $this->generateMockWebsite($prompt->prompt);
 
@@ -161,8 +166,8 @@ class AIWebsiteGenerator
             $this->collaborationService->aiGenerationCompleted($prompt->project, $prompt->project->user, 'completed');
 
         } catch (\Exception $e) {
-            Log::error('Fallback generation also failed: ' . $e->getMessage());
-            
+            Log::error('Fallback generation also failed: '.$e->getMessage());
+
             $prompt->update([
                 'status' => 'failed',
                 'processed_at' => now(),
@@ -184,7 +189,7 @@ class AIWebsiteGenerator
     {
         // Analyze the prompt to determine the type of website
         $websiteType = $this->analyzePrompt($prompt);
-        
+
         switch ($websiteType) {
             case 'portfolio':
                 return $this->generateNextJSPortfolio($prompt);
@@ -204,27 +209,27 @@ class AIWebsiteGenerator
     private function analyzePrompt(string $prompt): string
     {
         $prompt = strtolower($prompt);
-        
+
         if (str_contains($prompt, 'portfolio') || str_contains($prompt, 'personal') || str_contains($prompt, 'about me')) {
             return 'portfolio';
         }
-        
+
         if (str_contains($prompt, 'shop') || str_contains($prompt, 'store') || str_contains($prompt, 'ecommerce') || str_contains($prompt, 'buy') || str_contains($prompt, 'sell')) {
             return 'ecommerce';
         }
-        
+
         if (str_contains($prompt, 'blog') || str_contains($prompt, 'article') || str_contains($prompt, 'news')) {
             return 'blog';
         }
-        
+
         if (str_contains($prompt, 'landing') || str_contains($prompt, 'marketing') || str_contains($prompt, 'conversion')) {
             return 'landing';
         }
-        
+
         if (str_contains($prompt, 'dashboard') || str_contains($prompt, 'admin') || str_contains($prompt, 'analytics')) {
             return 'dashboard';
         }
-        
+
         return 'generic';
     }
 
@@ -239,12 +244,12 @@ class AIWebsiteGenerator
                     'dev' => 'next dev',
                     'build' => 'next build',
                     'start' => 'next start',
-                    'lint' => 'next lint'
+                    'lint' => 'next lint',
                 ],
                 'dependencies' => [
                     'next' => '^14.0.0',
                     'react' => '^18.0.0',
-                    'react-dom' => '^18.0.0'
+                    'react-dom' => '^18.0.0',
                 ],
                 'devDependencies' => [
                     '@types/node' => '^20.0.0',
@@ -252,8 +257,8 @@ class AIWebsiteGenerator
                     '@types/react-dom' => '^18.0.0',
                     'eslint' => '^8.0.0',
                     'eslint-config-next' => '^14.0.0',
-                    'typescript' => '^5.0.0'
-                ]
+                    'typescript' => '^5.0.0',
+                ],
             ], JSON_PRETTY_PRINT),
             'next.config.js' => "/** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -283,13 +288,13 @@ module.exports = nextConfig",
                             'next/babel',
                             [
                                 'preset-env' => [],
-                                'preset-react' => []
-                            ]
-                        ]
-                    ]
+                                'preset-react' => [],
+                            ],
+                        ],
+                    ],
                 ],
                 'include' => ['next-env.d.ts', '**/*.ts', '**/*.tsx', '.next/types/**/*.ts'],
-                'exclude' => ['node_modules']
+                'exclude' => ['node_modules'],
             ], JSON_PRETTY_PRINT),
             'app/layout.tsx' => 'import type { Metadata } from \'next\'
 import { Inter } from \'next/font/google\'
@@ -319,7 +324,7 @@ export default function RootLayout({
       <section className="hero">
         <div className="container">
           <h1>Welcome to Your AI-Generated Website</h1>
-          <p>This website was created based on your prompt: "' . htmlspecialchars($prompt) . '"</p>
+          <p>This website was created based on your prompt: "'.htmlspecialchars($prompt).'"</p>
           <a href="#features" className="btn">Learn More</a>
         </div>
       </section>
@@ -702,17 +707,17 @@ body {
                 <div class="article">
                     <h3>The Future of Web Development</h3>
                     <p>Exploring the latest trends and technologies shaping the future of web development...</p>
-                    <div class="date">Published on ' . date('M d, Y') . '</div>
+                    <div class="date">Published on '.date('M d, Y').'</div>
                 </div>
                 <div class="article">
                     <h3>AI in Modern Applications</h3>
                     <p>How artificial intelligence is revolutionizing the way we build and use applications...</p>
-                    <div class="date">Published on ' . date('M d, Y', strtotime('-2 days')) . '</div>
+                    <div class="date">Published on '.date('M d, Y', strtotime('-2 days')).'</div>
                 </div>
                 <div class="article">
                     <h3>Responsive Design Best Practices</h3>
                     <p>Essential tips and techniques for creating beautiful, responsive websites...</p>
-                    <div class="date">Published on ' . date('M d, Y', strtotime('-5 days')) . '</div>
+                    <div class="date">Published on '.date('M d, Y', strtotime('-5 days')).'</div>
                 </div>
             </div>
         </div>
@@ -855,5 +860,49 @@ body {
     </div>
 </body>
 </html>';
+    }
+
+    /**
+     * Auto-start a Docker container for the project
+     */
+    private function autoStartContainer(Project $project): void
+    {
+        try {
+            // Check if Docker is available
+            if (! $this->dockerService->isDockerAvailable()) {
+                Log::warning('Docker not available for auto-start container', [
+                    'project_id' => $project->id,
+                ]);
+
+                return;
+            }
+
+            // Create a new container
+            $container = $project->containers()->create([
+                'status' => 'starting',
+            ]);
+
+            // Start the container
+            $success = $this->dockerService->startContainer($container);
+
+            if ($success) {
+                Log::info('Auto-started container successfully', [
+                    'project_id' => $project->id,
+                    'container_id' => $container->id,
+                    'url' => $container->url,
+                ]);
+            } else {
+                Log::error('Failed to auto-start container', [
+                    'project_id' => $project->id,
+                    'container_id' => $container->id,
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Auto-start container failed', [
+                'project_id' => $project->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

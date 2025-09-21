@@ -26,6 +26,32 @@
 - **Headless UI**: Unstyled, accessible UI components
 - **Lucide React**: Beautiful icon library
 - **Class Variance Authority**: Component variant management
+- **Custom UI Components**: Reusable components (Textarea, Buttons, Modals)
+
+### AI Integration
+- **OpenAI GPT-4**: Primary AI provider for website generation
+- **Claude 3.5 Sonnet**: Cost-optimized AI provider (3.7x cheaper)
+- **Anthropic PHP Client**: Official Claude AI integration
+- **OpenAI PHP Client**: Official OpenAI integration
+- **Smart Fallback**: Automatic provider switching for reliability
+
+### Docker Integration
+- **Docker Engine**: Real container management for live previews
+- **Next.js Development Server**: Built-in server (no nginx required)
+- **Port Management**: Dynamic port allocation and conflict resolution
+- **Resource Cleanup**: Automatic cleanup of old containers and images
+- **Container Monitoring**: Health checks and resource usage tracking
+
+### Sandbox Interface Technologies
+- **React Hooks**: useState, useEffect for complex state management
+- **Inertia.js Navigation**: Seamless page transitions and routing
+- **Tailwind CSS v4**: Advanced styling with glow effects and animations
+- **Custom Components**: Reusable UI components with TypeScript
+- **Modal System**: Deployment progress tracking with visual feedback
+- **Tab Interface**: Multi-panel development environment
+- **Code Editor**: Syntax highlighting and file management
+- **Console Interface**: Command history and interactive input
+- **AI Chat Integration**: Real-time chat with prompt enhancement
 
 ## Development Environment
 
@@ -67,11 +93,13 @@ app/
 ### Frontend Structure (React + TypeScript)
 ```
 resources/js/
-├── pages/               # Route components
+├── pages/               # Route components (Projects/Index, Projects/Sandbox)
 ├── components/          # Reusable UI components
+│   ├── ui/              # Base UI components (Textarea, Buttons, etc.)
+│   └── layout/          # Layout-specific components
 ├── layouts/             # Layout components
 ├── hooks/               # Custom React hooks
-├── lib/                 # Utility functions
+├── lib/                 # Utility functions (cn, utils)
 ├── types/               # TypeScript type definitions
 └── wayfinder/           # Wayfinder configuration
 ```
@@ -82,7 +110,7 @@ resources/js/
 - **users**: User authentication and profile data
 - **projects**: Website projects with metadata
 - **prompts**: User input prompts for website generation
-- **containers**: Docker container management (mocked)
+- **containers**: Real Docker container management with live previews
 - **comments**: Project comments and feedback
 
 ### Key Relationships
@@ -99,6 +127,35 @@ resources/js/
 - **Mail**: SMTP settings for notifications
 - **Storage**: File storage configuration
 - **Security**: App key, session settings
+
+### AI Provider Configuration
+```env
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4
+OPENAI_MAX_TOKENS=4000
+OPENAI_TEMPERATURE=0.7
+
+# Claude AI Configuration
+CLAUDE_API_KEY=your_claude_api_key_here
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
+CLAUDE_MAX_TOKENS=4000
+CLAUDE_TEMPERATURE=0.7
+```
+
+### Cost Management
+- **Token Tracking**: Automatic usage monitoring per request
+- **Cost Estimation**: Real-time calculation before generation
+- **Provider Selection**: Intelligent routing based on cost and availability
+- **Budget Limits**: Configurable spending controls
+
+### Docker Configuration
+- **Container Base Image**: Node.js 18 Alpine
+- **Development Mode**: `npm run dev` for live previews
+- **Port Range**: 8000-8999 for dynamic allocation
+- **Resource Limits**: Configurable CPU and memory constraints
+- **Cleanup Policies**: Automatic removal of stopped containers
+- **Health Checks**: Container status monitoring
 
 ### Build Configuration
 - **Vite**: Asset bundling and optimization

@@ -53,7 +53,7 @@ export default function DockerManagementPanel({
     if (!containerId) return
     
     try {
-      const response = await fetch(`/projects/${projectId}/deployment/status`)
+      const response = await fetch(`/api/projects/${projectId}/docker/status`)
       const data = await response.json()
       
       if (data.stats) {
@@ -69,7 +69,7 @@ export default function DockerManagementPanel({
 
   const fetchLogs = async () => {
     try {
-      const response = await fetch(`/projects/${projectId}/deployment/logs`)
+      const response = await fetch(`/api/projects/${projectId}/docker/logs`)
       const data = await response.json()
       
       if (data.success) {
@@ -97,7 +97,7 @@ export default function DockerManagementPanel({
   const restartContainer = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/projects/${projectId}/deployment/restart`, {
+      const response = await fetch(`/api/projects/${projectId}/docker/restart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ export default function DockerManagementPanel({
   const stopContainer = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/projects/${projectId}/deployment/stop`, {
+      const response = await fetch(`/api/projects/${projectId}/docker/stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

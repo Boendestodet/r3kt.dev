@@ -81,7 +81,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\PromptController::show
-* @see app/Http/Controllers/PromptController.php:45
+* @see app/Http/Controllers/PromptController.php:51
 * @route '/prompts/{prompt}'
 */
 export const show = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -96,7 +96,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\PromptController::show
-* @see app/Http/Controllers/PromptController.php:45
+* @see app/Http/Controllers/PromptController.php:51
 * @route '/prompts/{prompt}'
 */
 show.url = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -129,7 +129,7 @@ show.url = (args: { prompt: number | { id: number } } | [prompt: number | { id: 
 
 /**
 * @see \App\Http\Controllers\PromptController::show
-* @see app/Http/Controllers/PromptController.php:45
+* @see app/Http/Controllers/PromptController.php:51
 * @route '/prompts/{prompt}'
 */
 show.get = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -139,7 +139,7 @@ show.get = (args: { prompt: number | { id: number } } | [prompt: number | { id: 
 
 /**
 * @see \App\Http\Controllers\PromptController::show
-* @see app/Http/Controllers/PromptController.php:45
+* @see app/Http/Controllers/PromptController.php:51
 * @route '/prompts/{prompt}'
 */
 show.head = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -149,7 +149,7 @@ show.head = (args: { prompt: number | { id: number } } | [prompt: number | { id:
 
 /**
 * @see \App\Http\Controllers\PromptController::show
-* @see app/Http/Controllers/PromptController.php:45
+* @see app/Http/Controllers/PromptController.php:51
 * @route '/prompts/{prompt}'
 */
 const showForm = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -159,7 +159,7 @@ const showForm = (args: { prompt: number | { id: number } } | [prompt: number | 
 
 /**
 * @see \App\Http\Controllers\PromptController::show
-* @see app/Http/Controllers/PromptController.php:45
+* @see app/Http/Controllers/PromptController.php:51
 * @route '/prompts/{prompt}'
 */
 showForm.get = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -169,7 +169,7 @@ showForm.get = (args: { prompt: number | { id: number } } | [prompt: number | { 
 
 /**
 * @see \App\Http\Controllers\PromptController::show
-* @see app/Http/Controllers/PromptController.php:45
+* @see app/Http/Controllers/PromptController.php:51
 * @route '/prompts/{prompt}'
 */
 showForm.head = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -186,7 +186,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\PromptController::status
-* @see app/Http/Controllers/PromptController.php:52
+* @see app/Http/Controllers/PromptController.php:58
 * @route '/prompts/{prompt}/status'
 */
 export const status = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -201,7 +201,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\PromptController::status
-* @see app/Http/Controllers/PromptController.php:52
+* @see app/Http/Controllers/PromptController.php:58
 * @route '/prompts/{prompt}/status'
 */
 status.url = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -234,7 +234,7 @@ status.url = (args: { prompt: number | { id: number } } | [prompt: number | { id
 
 /**
 * @see \App\Http\Controllers\PromptController::status
-* @see app/Http/Controllers/PromptController.php:52
+* @see app/Http/Controllers/PromptController.php:58
 * @route '/prompts/{prompt}/status'
 */
 status.get = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -244,7 +244,7 @@ status.get = (args: { prompt: number | { id: number } } | [prompt: number | { id
 
 /**
 * @see \App\Http\Controllers\PromptController::status
-* @see app/Http/Controllers/PromptController.php:52
+* @see app/Http/Controllers/PromptController.php:58
 * @route '/prompts/{prompt}/status'
 */
 status.head = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -254,7 +254,7 @@ status.head = (args: { prompt: number | { id: number } } | [prompt: number | { i
 
 /**
 * @see \App\Http\Controllers\PromptController::status
-* @see app/Http/Controllers/PromptController.php:52
+* @see app/Http/Controllers/PromptController.php:58
 * @route '/prompts/{prompt}/status'
 */
 const statusForm = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -264,7 +264,7 @@ const statusForm = (args: { prompt: number | { id: number } } | [prompt: number 
 
 /**
 * @see \App\Http\Controllers\PromptController::status
-* @see app/Http/Controllers/PromptController.php:52
+* @see app/Http/Controllers/PromptController.php:58
 * @route '/prompts/{prompt}/status'
 */
 statusForm.get = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -274,7 +274,7 @@ statusForm.get = (args: { prompt: number | { id: number } } | [prompt: number | 
 
 /**
 * @see \App\Http\Controllers\PromptController::status
-* @see app/Http/Controllers/PromptController.php:52
+* @see app/Http/Controllers/PromptController.php:58
 * @route '/prompts/{prompt}/status'
 */
 statusForm.head = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -291,7 +291,7 @@ status.form = statusForm
 
 /**
 * @see \App\Http\Controllers\PromptController::destroy
-* @see app/Http/Controllers/PromptController.php:63
+* @see app/Http/Controllers/PromptController.php:69
 * @route '/prompts/{prompt}'
 */
 export const destroy = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -306,7 +306,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\PromptController::destroy
-* @see app/Http/Controllers/PromptController.php:63
+* @see app/Http/Controllers/PromptController.php:69
 * @route '/prompts/{prompt}'
 */
 destroy.url = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -339,7 +339,7 @@ destroy.url = (args: { prompt: number | { id: number } } | [prompt: number | { i
 
 /**
 * @see \App\Http\Controllers\PromptController::destroy
-* @see app/Http/Controllers/PromptController.php:63
+* @see app/Http/Controllers/PromptController.php:69
 * @route '/prompts/{prompt}'
 */
 destroy.delete = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -349,7 +349,7 @@ destroy.delete = (args: { prompt: number | { id: number } } | [prompt: number | 
 
 /**
 * @see \App\Http\Controllers\PromptController::destroy
-* @see app/Http/Controllers/PromptController.php:63
+* @see app/Http/Controllers/PromptController.php:69
 * @route '/prompts/{prompt}'
 */
 const destroyForm = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -364,7 +364,7 @@ const destroyForm = (args: { prompt: number | { id: number } } | [prompt: number
 
 /**
 * @see \App\Http\Controllers\PromptController::destroy
-* @see app/Http/Controllers/PromptController.php:63
+* @see app/Http/Controllers/PromptController.php:69
 * @route '/prompts/{prompt}'
 */
 destroyForm.delete = (args: { prompt: number | { id: number } } | [prompt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

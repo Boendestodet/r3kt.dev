@@ -1,7 +1,169 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
-* @see \App\Http\Controllers\DeploymentController::cleanup
-* @see app/Http/Controllers/DeploymentController.php:247
+* @see \App\Http\Controllers\DockerController::info
+* @see app/Http/Controllers/DockerController.php:23
+* @route '/api/docker/info'
+*/
+export const info = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: info.url(options),
+    method: 'get',
+})
+
+info.definition = {
+    methods: ["get","head"],
+    url: '/api/docker/info',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\DockerController::info
+* @see app/Http/Controllers/DockerController.php:23
+* @route '/api/docker/info'
+*/
+info.url = (options?: RouteQueryOptions) => {
+    return info.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\DockerController::info
+* @see app/Http/Controllers/DockerController.php:23
+* @route '/api/docker/info'
+*/
+info.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: info.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::info
+* @see app/Http/Controllers/DockerController.php:23
+* @route '/api/docker/info'
+*/
+info.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: info.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::info
+* @see app/Http/Controllers/DockerController.php:23
+* @route '/api/docker/info'
+*/
+const infoForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: info.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::info
+* @see app/Http/Controllers/DockerController.php:23
+* @route '/api/docker/info'
+*/
+infoForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: info.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::info
+* @see app/Http/Controllers/DockerController.php:23
+* @route '/api/docker/info'
+*/
+infoForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: info.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+info.form = infoForm
+
+/**
+* @see \App\Http\Controllers\DockerController::containers
+* @see app/Http/Controllers/DockerController.php:307
+* @route '/api/docker/containers'
+*/
+export const containers = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: containers.url(options),
+    method: 'get',
+})
+
+containers.definition = {
+    methods: ["get","head"],
+    url: '/api/docker/containers',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\DockerController::containers
+* @see app/Http/Controllers/DockerController.php:307
+* @route '/api/docker/containers'
+*/
+containers.url = (options?: RouteQueryOptions) => {
+    return containers.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\DockerController::containers
+* @see app/Http/Controllers/DockerController.php:307
+* @route '/api/docker/containers'
+*/
+containers.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: containers.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::containers
+* @see app/Http/Controllers/DockerController.php:307
+* @route '/api/docker/containers'
+*/
+containers.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: containers.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::containers
+* @see app/Http/Controllers/DockerController.php:307
+* @route '/api/docker/containers'
+*/
+const containersForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: containers.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::containers
+* @see app/Http/Controllers/DockerController.php:307
+* @route '/api/docker/containers'
+*/
+containersForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: containers.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DockerController::containers
+* @see app/Http/Controllers/DockerController.php:307
+* @route '/api/docker/containers'
+*/
+containersForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: containers.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+containers.form = containersForm
+
+/**
+* @see \App\Http\Controllers\DockerController::cleanup
+* @see app/Http/Controllers/DockerController.php:333
 * @route '/api/docker/cleanup'
 */
 export const cleanup = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -15,8 +177,8 @@ cleanup.definition = {
 } satisfies RouteDefinition<["post"]>
 
 /**
-* @see \App\Http\Controllers\DeploymentController::cleanup
-* @see app/Http/Controllers/DeploymentController.php:247
+* @see \App\Http\Controllers\DockerController::cleanup
+* @see app/Http/Controllers/DockerController.php:333
 * @route '/api/docker/cleanup'
 */
 cleanup.url = (options?: RouteQueryOptions) => {
@@ -24,8 +186,8 @@ cleanup.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see \App\Http\Controllers\DeploymentController::cleanup
-* @see app/Http/Controllers/DeploymentController.php:247
+* @see \App\Http\Controllers\DockerController::cleanup
+* @see app/Http/Controllers/DockerController.php:333
 * @route '/api/docker/cleanup'
 */
 cleanup.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -34,8 +196,8 @@ cleanup.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\DeploymentController::cleanup
-* @see app/Http/Controllers/DeploymentController.php:247
+* @see \App\Http\Controllers\DockerController::cleanup
+* @see app/Http/Controllers/DockerController.php:333
 * @route '/api/docker/cleanup'
 */
 const cleanupForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -44,8 +206,8 @@ const cleanupForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =
 })
 
 /**
-* @see \App\Http\Controllers\DeploymentController::cleanup
-* @see app/Http/Controllers/DeploymentController.php:247
+* @see \App\Http\Controllers\DockerController::cleanup
+* @see app/Http/Controllers/DockerController.php:333
 * @route '/api/docker/cleanup'
 */
 cleanupForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -56,6 +218,8 @@ cleanupForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =>
 cleanup.form = cleanupForm
 
 const docker = {
+    info,
+    containers,
     cleanup,
 }
 

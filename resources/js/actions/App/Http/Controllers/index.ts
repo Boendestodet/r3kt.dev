@@ -2,8 +2,8 @@ import GalleryController from './GalleryController'
 import ProjectController from './ProjectController'
 import PromptController from './PromptController'
 import ContainerController from './ContainerController'
-import DeploymentController from './DeploymentController'
 import CommentController from './CommentController'
+import DockerController from './DockerController'
 import SubdomainController from './SubdomainController'
 import Settings from './Settings'
 import Auth from './Auth'
@@ -13,8 +13,8 @@ const Controllers = {
     ProjectController,
     PromptController,
     ContainerController,
-    DeploymentController,
     CommentController,
+    DockerController,
     SubdomainController,
     Settings,
     Auth,

@@ -19,11 +19,13 @@ class Prompt extends Model
         'metadata',
         'tokens_used',
         'processed_at',
+        'auto_start_container',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'processed_at' => 'datetime',
+        'auto_start_container' => 'boolean',
     ];
 
     public function project(): BelongsTo

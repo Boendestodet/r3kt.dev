@@ -23,6 +23,7 @@ class StorePromptRequest extends FormRequest
     {
         return [
             'prompt' => ['required', 'string', 'min:10', 'max:2000'],
+            'auto_start_container' => ['boolean'],
         ];
     }
 
