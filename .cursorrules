@@ -1,0 +1,57 @@
+# Lovable Clone - AI-Powered Website Builder
+
+## Project Overview
+This is a Laravel 12 + React 19 application that clones Lovable's AI-powered website builder. Users can generate websites using natural language prompts, with intelligent detection of website types and modern UI/UX.
+
+## Key Technologies
+- **Backend**: Laravel 12, PHP 8.3, MySQL
+- **Frontend**: React 19, TypeScript, Inertia.js v2
+- **Styling**: Tailwind CSS v4
+- **Testing**: Pest v4
+- **Build**: Vite
+
+## Development Patterns
+
+### Laravel Patterns
+- Use Eloquent relationships over raw queries
+- Implement Form Request classes for validation
+- Use Policies for authorization
+- Follow Laravel 12 streamlined structure (no middleware files, bootstrap/app.php for configuration)
+
+### React Patterns
+- Component-based architecture with TypeScript
+- Use Inertia.js for navigation and forms
+- Implement proper error handling and loading states
+- Follow React 19 best practices
+
+### Database Patterns
+- Use migrations for schema changes
+- Implement proper relationships between models
+- Use factories for test data generation
+- Follow naming conventions (lowercase folder names)
+
+## Project Structure
+- **Models**: User, Project, Prompt, Comment, Container
+- **Services**: AIWebsiteGeneratorService, ProjectService, ContainerService
+- **Frontend**: Pages, Components, Layouts, Hooks
+- **Testing**: Feature tests for user flows, unit tests for business logic
+
+## Key Features
+- AI-powered website generation with multiple types
+- Project management with CRUD operations
+- User authentication and authorization
+- Modern responsive UI with Tailwind CSS v4
+- Comprehensive testing with Pest v4
+
+## Development Guidelines
+- Always write tests for new features
+- Use descriptive names for variables and methods
+- Follow existing code conventions
+- Use Laravel Boost tools for development
+- Maintain memory bank documentation
+
+## Current Status
+- Core platform is 90% complete
+- AI integration is mocked (needs real API)
+- Real-time features are minimal
+- Memory bank is being established
