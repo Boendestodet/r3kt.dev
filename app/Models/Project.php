@@ -27,7 +27,6 @@ class Project extends Model
         'subdomain',
         'custom_domain',
         'dns_configured',
-        'container_id',
     ];
 
     protected $casts = [

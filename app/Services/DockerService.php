@@ -49,7 +49,6 @@ class DockerService
                     'status' => 'ready',
                     'preview_url' => $url,
                     'last_built_at' => now(),
-                    'container_id' => $containerId,
                 ]);
 
                 Log::info('Container started successfully', [

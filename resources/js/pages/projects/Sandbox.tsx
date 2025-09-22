@@ -116,55 +116,165 @@ interface ChatMessage {
   isTyping?: boolean
 }
 
+interface Container {
+  id: number
+  status: string
+  preview_url?: string
+  created_at: string
+  updated_at: string
+}
+
+interface Prompt {
+  id: number
+  prompt: string
+  response?: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
 interface Props {
   project: {
     id: number
     name: string
+    description?: string
     stack: string
     model: string
-    status: 'building' | 'ready' | 'error'
+    status: 'draft' | 'building' | 'ready' | 'error'
     preview_url?: string
+    created_at: string
+    updated_at: string
+    containers: Container[]
+    prompts: Prompt[]
+    generated_code?: string
+  }
+  flash?: {
+    success?: string
+    error?: string
   }
 }
 
-export default function SandboxPage({ project }: Props) {
-  // Mock file structure
-  const fileStructure: FileNode[] = [
-    {
-      name: 'src',
-      type: 'folder',
-      children: [
+export default function SandboxPage({ project, flash }: Props) {
+  // Helper function to get project status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ready': return 'bg-green-400'
+      case 'building': return 'bg-yellow-400'
+      case 'draft': return 'bg-slate-400'
+      case 'error': return 'bg-red-400'
+      default: return 'bg-slate-400'
+    }
+  }
+
+  // Helper function to get status text
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'ready': return 'Ready'
+      case 'building': return 'Building'
+      case 'draft': return 'Draft'
+      case 'error': return 'Error'
+      default: return 'Unknown'
+    }
+  }
+
+  // Get active container
+  const activeContainer = project.containers.find(container => container.status === 'running')
+
+  // Parse generated code if available
+  const parseGeneratedCode = (code: string | undefined) => {
+    if (!code) return []
+    
+    try {
+      const parsed = JSON.parse(code)
+      return parsed.files || []
+    } catch {
+      return []
+    }
+  }
+
+  // Convert generated code to file structure
+  const convertToFileStructure = (files: any[]): FileNode[] => {
+    const fileMap = new Map<string, FileNode>()
+    const rootFiles: FileNode[] = []
+
+    // First pass: create all files
+    files.forEach(file => {
+      const pathParts = file.path.split('/').filter(Boolean)
+      const fileName = pathParts[pathParts.length - 1]
+      const isFolder = file.type === 'folder' || !fileName.includes('.')
+      
+      const fileNode: FileNode = {
+        name: fileName,
+        type: isFolder ? 'folder' : 'file',
+        content: file.content || '',
+        children: isFolder ? [] : undefined
+      }
+      
+      fileMap.set(file.path, fileNode)
+    })
+
+    // Second pass: build hierarchy
+    files.forEach(file => {
+      const pathParts = file.path.split('/').filter(Boolean)
+      const fileName = pathParts[pathParts.length - 1]
+      const isFolder = file.type === 'folder' || !fileName.includes('.')
+      
+      if (pathParts.length === 1) {
+        // Root level file
+        rootFiles.push(fileMap.get(file.path)!)
+      } else {
+        // Nested file
+        const parentPath = pathParts.slice(0, -1).join('/')
+        const parent = fileMap.get(parentPath)
+        if (parent && parent.children) {
+          parent.children.push(fileMap.get(file.path)!)
+        }
+      }
+    })
+
+    return rootFiles
+  }
+
+  // Get real project files or fallback to mock
+  const projectFiles = parseGeneratedCode(project.generated_code)
+  const fileStructure: FileNode[] = projectFiles.length > 0 
+    ? convertToFileStructure(projectFiles)
+    : [
         {
-          name: 'components',
+          name: 'src',
           type: 'folder',
           children: [
-            { name: 'Header.tsx', type: 'file', content: 'export default function Header() {\n  return <header>Header Component</header>\n}' },
-            { name: 'Footer.tsx', type: 'file', content: 'export default function Footer() {\n  return <footer>Footer Component</footer>\n}' }
+            {
+              name: 'components',
+              type: 'folder',
+              children: [
+                { name: 'Header.tsx', type: 'file', content: 'export default function Header() {\n  return <header>Header Component</header>\n}' },
+                { name: 'Footer.tsx', type: 'file', content: 'export default function Footer() {\n  return <footer>Footer Component</footer>\n}' }
+              ]
+            },
+            {
+              name: 'pages',
+              type: 'folder',
+              children: [
+                { name: 'Home.tsx', type: 'file', content: 'export default function Home() {\n  return <div>Home Page</div>\n}' },
+                { name: 'About.tsx', type: 'file', content: 'export default function About() {\n  return <div>About Page</div>\n}' }
+              ]
+            },
+            { name: 'App.tsx', type: 'file', content: 'import React from \'react\'\n\nexport default function App() {\n  return (\n    <div className="App">\n      <h1>My App</h1>\n    </div>\n  )\n}' },
+            { name: 'index.tsx', type: 'file', content: 'import React from \'react\'\nimport ReactDOM from \'react-dom/client\'\nimport App from \'./App\'\n\nReactDOM.createRoot(document.getElementById(\'root\')!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n)' }
           ]
         },
         {
-          name: 'pages',
+          name: 'public',
           type: 'folder',
           children: [
-            { name: 'Home.tsx', type: 'file', content: 'export default function Home() {\n  return <div>Home Page</div>\n}' },
-            { name: 'About.tsx', type: 'file', content: 'export default function About() {\n  return <div>About Page</div>\n}' }
+            { name: 'index.html', type: 'file', content: '<!DOCTYPE html>\n<html>\n<head>\n  <title>My App</title>\n</head>\n<body>\n  <div id="root"></div>\n</body>\n</html>' },
+            { name: 'favicon.ico', type: 'file' }
           ]
         },
-        { name: 'App.tsx', type: 'file', content: 'import React from \'react\'\n\nexport default function App() {\n  return (\n    <div className="App">\n      <h1>My App</h1>\n    </div>\n  )\n}' },
-        { name: 'index.tsx', type: 'file', content: 'import React from \'react\'\nimport ReactDOM from \'react-dom/client\'\nimport App from \'./App\'\n\nReactDOM.createRoot(document.getElementById(\'root\')!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n)' }
+        { name: 'package.json', type: 'file', content: '{\n  "name": "my-app",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.0.0",\n    "react-dom": "^18.0.0"\n  }\n}' },
+        { name: 'README.md', type: 'file', content: '# My App\n\nThis is a React application built with Vite.' }
       ]
-    },
-    {
-      name: 'public',
-      type: 'folder',
-      children: [
-        { name: 'index.html', type: 'file', content: '<!DOCTYPE html>\n<html>\n<head>\n  <title>My App</title>\n</head>\n<body>\n  <div id="root"></div>\n</body>\n</html>' },
-        { name: 'favicon.ico', type: 'file' }
-      ]
-    },
-    { name: 'package.json', type: 'file', content: '{\n  "name": "my-app",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.0.0",\n    "react-dom": "^18.0.0"\n  }\n}' },
-    { name: 'README.md', type: 'file', content: '# My App\n\nThis is a React application built with Vite.' }
-  ]
 
   const [activeTab, setActiveTab] = useState<'console' | 'files' | 'preview' | 'chat'>('chat')
   const [consoleOutput, setConsoleOutput] = useState<string[]>([])
@@ -174,11 +284,94 @@ export default function SandboxPage({ project }: Props) {
   const [commandInput, setCommandInput] = useState('')
   const [commandHistory, setCommandHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
+  
+  // Container management state
+  const [isContainerLoading, setIsContainerLoading] = useState(false)
+  const [containerStatus, setContainerStatus] = useState(project.status)
+
+  // Container management functions
+  const startContainer = () => {
+    setIsContainerLoading(true)
+    router.post(`/api/projects/${project.id}/docker/start`, {}, {
+      onSuccess: () => {
+        setContainerStatus('building')
+        setIsContainerLoading(false)
+        // Refresh the page to get updated container status
+        router.reload()
+      },
+      onError: () => {
+        setIsContainerLoading(false)
+        setContainerStatus('error')
+      }
+    })
+  }
+
+  const stopContainer = () => {
+    setIsContainerLoading(true)
+    router.post(`/api/projects/${project.id}/docker/stop`, {}, {
+      onSuccess: () => {
+        setContainerStatus('draft')
+        setIsContainerLoading(false)
+        router.reload()
+      },
+      onError: () => {
+        setIsContainerLoading(false)
+        setContainerStatus('error')
+      }
+    })
+  }
+
+  const restartContainer = () => {
+    setIsContainerLoading(true)
+    router.post(`/api/projects/${project.id}/docker/restart`, {}, {
+      onSuccess: () => {
+        setContainerStatus('building')
+        setIsContainerLoading(false)
+        router.reload()
+      },
+      onError: () => {
+        setIsContainerLoading(false)
+        setContainerStatus('error')
+      }
+    })
+  }
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const [isAiTyping, setIsAiTyping] = useState(false)
   const [fileSystem, setFileSystem] = useState<FileNode[]>(fileStructure)
   const [isEnhancing, setIsEnhancing] = useState(false)
+
+  // Initialize chat with existing prompts
+  useEffect(() => {
+    const initialMessages: ChatMessage[] = project.prompts.map(prompt => ({
+      id: prompt.id.toString(),
+      type: 'user' as const,
+      content: prompt.prompt,
+      timestamp: new Date(prompt.created_at)
+    }))
+
+    // Add AI responses if available
+    const messagesWithResponses: ChatMessage[] = []
+    project.prompts.forEach(prompt => {
+      messagesWithResponses.push({
+        id: `user-${prompt.id}`,
+        type: 'user' as const,
+        content: prompt.prompt,
+        timestamp: new Date(prompt.created_at)
+      })
+      
+      if (prompt.response) {
+        messagesWithResponses.push({
+          id: `ai-${prompt.id}`,
+          type: 'ai' as const,
+          content: prompt.response,
+          timestamp: new Date(prompt.updated_at)
+        })
+      }
+    })
+
+    setChatMessages(messagesWithResponses)
+  }, [project.prompts])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-resize textarea function
@@ -420,19 +613,38 @@ export default function SandboxPage({ project }: Props) {
     setChatInput('')
     setIsAiTyping(true)
 
-    // Simulate AI thinking and response
-    setTimeout(() => {
-      const aiResponse = generateAiResponse(message)
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: aiResponse,
-        timestamp: new Date()
+    // Create a real prompt in the database
+    router.post(`/projects/${project.id}/prompts`, {
+      prompt: message
+    }, {
+      onSuccess: (page) => {
+        // Get the created prompt from the response
+        const prompt = (page.props as any)?.flash?.prompt
+        if (prompt) {
+          const aiMessage: ChatMessage = {
+            id: prompt.id.toString(),
+            type: 'ai',
+            content: prompt.response || 'I\'m processing your request...',
+            timestamp: new Date(prompt.created_at)
+          }
+          
+          setChatMessages(prev => [...prev, aiMessage])
+        }
+        setIsAiTyping(false)
+      },
+      onError: (errors) => {
+        console.error('Failed to create prompt:', errors)
+        const errorMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: 'Sorry, I encountered an error processing your request. Please try again.',
+          timestamp: new Date()
+        }
+        
+        setChatMessages(prev => [...prev, errorMessage])
+        setIsAiTyping(false)
       }
-      
-      setChatMessages(prev => [...prev, aiMessage])
-      setIsAiTyping(false)
-    }, 1500)
+    })
   }
 
   const generateAiResponse = (message: string): string => {
@@ -1038,6 +1250,18 @@ Please provide a complete, working implementation with examples and usage instru
       <Head title={`${project.name} - Sandbox`} />
       
       <div className="min-h-screen bg-gradient-to-br from-[#0B0F1A] to-[#0A0E18] text-white">
+        {/* Flash Messages */}
+        {flash?.success && (
+          <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 text-sm">
+            {flash.success}
+          </div>
+        )}
+        {flash?.error && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 text-sm">
+            {flash.error}
+          </div>
+        )}
+        
         {/* Header */}
         <div className="border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-sm">
           <div className="px-6 py-4">
@@ -1058,12 +1282,8 @@ Please provide a complete, working implementation with examples and usage instru
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    project.status === 'ready' ? 'bg-green-400' :
-                    project.status === 'building' ? 'bg-yellow-400' :
-                    'bg-red-400'
-                  }`} />
-                  <span className="text-sm text-slate-300 capitalize">{project.status}</span>
+                  <div className={`w-2 h-2 rounded-full ${getStatusColor(containerStatus)}`} />
+                  <span className="text-sm text-slate-300">{getStatusText(containerStatus)}</span>
                 </div>
               </div>
 
@@ -1080,19 +1300,39 @@ Please provide a complete, working implementation with examples and usage instru
                   </a>
                 )}
                 
-                <button className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-lg transition-colors duration-200">
-                  <Play className="w-4 h-4 text-green-400" />
-                  <span className="text-sm text-green-400">Start</span>
-                </button>
+                {containerStatus === 'draft' || containerStatus === 'error' ? (
+                  <button 
+                    onClick={startContainer}
+                    disabled={isContainerLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Play className="w-4 h-4 text-green-400" />
+                    <span className="text-sm text-green-400">
+                      {isContainerLoading ? 'Starting...' : 'Start'}
+                    </span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={stopContainer}
+                    disabled={isContainerLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Square className="w-4 h-4 text-red-400" />
+                    <span className="text-sm text-red-400">
+                      {isContainerLoading ? 'Stopping...' : 'Stop'}
+                    </span>
+                  </button>
+                )}
                 
-                <button className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg transition-colors duration-200">
-                  <Square className="w-4 h-4 text-red-400" />
-                  <span className="text-sm text-red-400">Stop</span>
-                </button>
-                
-                <button className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/30 rounded-lg transition-colors duration-200">
-                  <RefreshCw className="w-4 h-4 text-slate-300" />
-                  <span className="text-sm text-slate-300">Restart</span>
+                <button 
+                  onClick={restartContainer}
+                  disabled={isContainerLoading || containerStatus === 'draft'}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/30 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`w-4 h-4 text-slate-300 ${isContainerLoading ? 'animate-spin' : ''}`} />
+                  <span className="text-sm text-slate-300">
+                    {isContainerLoading ? 'Restarting...' : 'Restart'}
+                  </span>
                 </button>
               </div>
             </div>

@@ -23,18 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('api/projects/check-name', [App\Http\Controllers\ProjectController::class, 'checkName'])->name('projects.check-name');
     Route::get('api/projects/{project}', [App\Http\Controllers\ProjectController::class, 'showApi'])->name('projects.show-api');
     Route::get('api/projects/{project}/verify-setup', [App\Http\Controllers\ProjectController::class, 'verifySetup'])->name('projects.verify-setup');
-    Route::get('projects/{project}/sandbox', function ($projectId) {
-        return Inertia::render('projects/Sandbox', [
-            'project' => [
-                'id' => $projectId,
-                'name' => 'My Sandbox Project',
-                'stack' => 'Next.js',
-                'model' => 'Claude Code',
-                'status' => 'ready',
-                'preview_url' => 'http://localhost:3000'
-            ]
-        ]);
-    })->name('projects.sandbox');
+    Route::get('projects/{project}/sandbox', [App\Http\Controllers\ProjectController::class, 'sandbox'])->name('projects.sandbox');
 
     // Prompt routes
     Route::post('projects/{project}/prompts', [App\Http\Controllers\PromptController::class, 'store'])->name('prompts.store');
