@@ -276,7 +276,7 @@ destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:125
+* @see app/Http/Controllers/DockerController.php:131
 * @route '/api/containers/{container}/stop'
 */
 export const stop = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -291,7 +291,7 @@ stop.definition = {
 
 /**
 * @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:125
+* @see app/Http/Controllers/DockerController.php:131
 * @route '/api/containers/{container}/stop'
 */
 stop.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -324,7 +324,7 @@ stop.url = (args: { container: number | { id: number } } | [container: number | 
 
 /**
 * @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:125
+* @see app/Http/Controllers/DockerController.php:131
 * @route '/api/containers/{container}/stop'
 */
 stop.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -334,7 +334,7 @@ stop.post = (args: { container: number | { id: number } } | [container: number |
 
 /**
 * @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:125
+* @see app/Http/Controllers/DockerController.php:131
 * @route '/api/containers/{container}/stop'
 */
 const stopForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -344,7 +344,7 @@ const stopForm = (args: { container: number | { id: number } } | [container: num
 
 /**
 * @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:125
+* @see app/Http/Controllers/DockerController.php:131
 * @route '/api/containers/{container}/stop'
 */
 stopForm.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -356,7 +356,7 @@ stop.form = stopForm
 
 /**
 * @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:173
+* @see app/Http/Controllers/DockerController.php:179
 * @route '/api/containers/{container}/restart'
 */
 export const restart = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -371,7 +371,7 @@ restart.definition = {
 
 /**
 * @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:173
+* @see app/Http/Controllers/DockerController.php:179
 * @route '/api/containers/{container}/restart'
 */
 restart.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -404,7 +404,7 @@ restart.url = (args: { container: number | { id: number } } | [container: number
 
 /**
 * @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:173
+* @see app/Http/Controllers/DockerController.php:179
 * @route '/api/containers/{container}/restart'
 */
 restart.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -414,7 +414,7 @@ restart.post = (args: { container: number | { id: number } } | [container: numbe
 
 /**
 * @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:173
+* @see app/Http/Controllers/DockerController.php:179
 * @route '/api/containers/{container}/restart'
 */
 const restartForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -424,7 +424,7 @@ const restartForm = (args: { container: number | { id: number } } | [container: 
 
 /**
 * @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:173
+* @see app/Http/Controllers/DockerController.php:179
 * @route '/api/containers/{container}/restart'
 */
 restartForm.post = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -436,7 +436,7 @@ restart.form = restartForm
 
 /**
 * @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:223
+* @see app/Http/Controllers/DockerController.php:229
 * @route '/api/containers/{container}/status'
 */
 export const status = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -451,7 +451,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:223
+* @see app/Http/Controllers/DockerController.php:229
 * @route '/api/containers/{container}/status'
 */
 status.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -484,7 +484,7 @@ status.url = (args: { container: number | { id: number } } | [container: number 
 
 /**
 * @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:223
+* @see app/Http/Controllers/DockerController.php:229
 * @route '/api/containers/{container}/status'
 */
 status.get = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -494,7 +494,7 @@ status.get = (args: { container: number | { id: number } } | [container: number 
 
 /**
 * @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:223
+* @see app/Http/Controllers/DockerController.php:229
 * @route '/api/containers/{container}/status'
 */
 status.head = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -504,7 +504,7 @@ status.head = (args: { container: number | { id: number } } | [container: number
 
 /**
 * @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:223
+* @see app/Http/Controllers/DockerController.php:229
 * @route '/api/containers/{container}/status'
 */
 const statusForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -514,7 +514,7 @@ const statusForm = (args: { container: number | { id: number } } | [container: n
 
 /**
 * @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:223
+* @see app/Http/Controllers/DockerController.php:229
 * @route '/api/containers/{container}/status'
 */
 statusForm.get = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -524,7 +524,7 @@ statusForm.get = (args: { container: number | { id: number } } | [container: num
 
 /**
 * @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:223
+* @see app/Http/Controllers/DockerController.php:229
 * @route '/api/containers/{container}/status'
 */
 statusForm.head = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -541,7 +541,7 @@ status.form = statusForm
 
 /**
 * @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:269
+* @see app/Http/Controllers/DockerController.php:275
 * @route '/api/containers/{container}/logs'
 */
 export const logs = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -556,7 +556,7 @@ logs.definition = {
 
 /**
 * @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:269
+* @see app/Http/Controllers/DockerController.php:275
 * @route '/api/containers/{container}/logs'
 */
 logs.url = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -589,7 +589,7 @@ logs.url = (args: { container: number | { id: number } } | [container: number | 
 
 /**
 * @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:269
+* @see app/Http/Controllers/DockerController.php:275
 * @route '/api/containers/{container}/logs'
 */
 logs.get = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -599,7 +599,7 @@ logs.get = (args: { container: number | { id: number } } | [container: number | 
 
 /**
 * @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:269
+* @see app/Http/Controllers/DockerController.php:275
 * @route '/api/containers/{container}/logs'
 */
 logs.head = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -609,7 +609,7 @@ logs.head = (args: { container: number | { id: number } } | [container: number |
 
 /**
 * @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:269
+* @see app/Http/Controllers/DockerController.php:275
 * @route '/api/containers/{container}/logs'
 */
 const logsForm = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -619,7 +619,7 @@ const logsForm = (args: { container: number | { id: number } } | [container: num
 
 /**
 * @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:269
+* @see app/Http/Controllers/DockerController.php:275
 * @route '/api/containers/{container}/logs'
 */
 logsForm.get = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -629,7 +629,7 @@ logsForm.get = (args: { container: number | { id: number } } | [container: numbe
 
 /**
 * @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:269
+* @see app/Http/Controllers/DockerController.php:275
 * @route '/api/containers/{container}/logs'
 */
 logsForm.head = (args: { container: number | { id: number } } | [container: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

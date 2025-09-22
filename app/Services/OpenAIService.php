@@ -13,13 +13,13 @@ class OpenAIService
     }
 
     /**
-     * Generate a complete Next.js project using OpenAI
+     * Generate a complete project using OpenAI
      */
-    public function generateWebsite(string $prompt): array
+    public function generateWebsite(string $prompt, string $projectType = 'nextjs'): array
     {
         try {
-            $systemPrompt = $this->buildSystemPrompt();
-            $userPrompt = $this->buildUserPrompt($prompt);
+            $systemPrompt = $this->buildSystemPrompt($projectType);
+            $userPrompt = $this->buildUserPrompt($prompt, $projectType);
 
             $client = \OpenAI::client(config('services.openai.api_key'));
             $response = $client->chat()->create([
@@ -68,17 +68,25 @@ class OpenAIService
     /**
      * Build the system prompt for website generation
      */
-    private function buildSystemPrompt(): string
+    private function buildSystemPrompt(string $projectType = 'nextjs'): string
     {
-        return "You are a web developer. Generate a Next.js project as JSON with these exact keys where each value is a STRING (not an object): package.json, next.config.js, tsconfig.json, app/layout.tsx, app/page.tsx, app/globals.css. Each value must be a complete file content as a string. Return only valid JSON, no other text.";
+        if ($projectType === 'vite') {
+            return "You are a web developer. Generate a Vite + React + TypeScript project as JSON with these exact keys where each value is a STRING (not an object): index.html, src/main.tsx, src/App.tsx, src/App.css, src/index.css. Each value must be a complete file content as a string. DO NOT include configuration files like package.json, vite.config.ts, tsconfig.json, etc. - these are handled by the system. Focus only on the application code and UI components. Return only valid JSON, no other text.";
+        } else {
+            return "You are a web developer. Generate a Next.js project as JSON with these exact keys where each value is a STRING (not an object): app/layout.tsx, app/page.tsx, app/globals.css. Each value must be a complete file content as a string. DO NOT include configuration files like package.json, next.config.js, tsconfig.json, etc. - these are handled by the system. Focus only on the application code and UI components. Return only valid JSON, no other text.";
+        }
     }
 
     /**
      * Build the user prompt with context
      */
-    private function buildUserPrompt(string $prompt): string
+    private function buildUserPrompt(string $prompt, string $projectType = 'nextjs'): string
     {
-        return "Create a Next.js website for: {$prompt}";
+        if ($projectType === 'vite') {
+            return "Create a Vite + React + TypeScript website for: {$prompt}";
+        } else {
+            return "Create a Next.js website for: {$prompt}";
+        }
     }
 
     /**

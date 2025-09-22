@@ -8,6 +8,8 @@ use App\Services\DockerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class DockerController extends Controller
 {
@@ -45,11 +47,14 @@ class DockerController extends Controller
     /**
      * Start a container for a project
      */
-    public function startContainer(Request $request, Project $project): JsonResponse
+    public function startContainer(Request $request, Project $project)
     {
         try {
             // Check if user owns the project
             if ($project->user_id !== auth()->id()) {
+                if (request()->header('X-Inertia')) {
+                    return redirect()->back()->withErrors(['error' => 'Unauthorized access to project']);
+                }
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access to project',
@@ -58,6 +63,9 @@ class DockerController extends Controller
 
             // Check if Docker is available
             if (! $this->dockerService->isDockerAvailable()) {
+                if (request()->header('X-Inertia')) {
+                    return redirect()->back()->withErrors(['error' => 'Docker is not available on this system']);
+                }
                 return response()->json([
                     'success' => false,
                     'message' => 'Docker is not available on this system',
@@ -66,6 +74,9 @@ class DockerController extends Controller
 
             // Check if project has generated code
             if (! $project->generated_code) {
+                if (request()->header('X-Inertia')) {
+                    return redirect()->back()->withErrors(['error' => 'Project has no generated code. Please generate a website first.']);
+                }
                 return response()->json([
                     'success' => false,
                     'message' => 'Project has no generated code. Please generate a website first.',
@@ -87,11 +98,11 @@ class DockerController extends Controller
             if ($success) {
                 $container->refresh();
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Container started successfully',
-                    'data' => [
-                        'container_id' => $container->id,
+                // Always return Inertia response for this application
+                return redirect()->back()->with([
+                    'success' => 'Container started successfully',
+                    'container' => [
+                        'id' => $container->id,
                         'status' => $container->status,
                         'url' => $container->url,
                         'port' => $container->port,
@@ -100,10 +111,8 @@ class DockerController extends Controller
                 ]);
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to start container',
-            ], 500);
+            // Always return Inertia response for this application
+            return redirect()->back()->withErrors(['error' => 'Failed to start container']);
 
         } catch (\Exception $e) {
             Log::error('Failed to start container', [
@@ -111,11 +120,8 @@ class DockerController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to start container',
-                'error' => $e->getMessage(),
-            ], 500);
+            // Always return Inertia response for this application
+            return redirect()->back()->withErrors(['error' => 'Failed to start container: '.$e->getMessage()]);
         }
     }
 
@@ -357,11 +363,14 @@ class DockerController extends Controller
     /**
      * Deploy a project
      */
-    public function deploy(Project $project): JsonResponse
+    public function deploy(Project $project)
     {
         try {
             // Check if user owns the project
             if ($project->user_id !== auth()->id()) {
+                if (request()->header('X-Inertia')) {
+                    return redirect()->back()->withErrors(['error' => 'Unauthorized access to project']);
+                }
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access to project',
@@ -371,16 +380,36 @@ class DockerController extends Controller
             $success = $this->dockerService->deployProject($project);
 
             if ($success) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Project deployed successfully!',
-                ]);
+                // For Inertia requests, return back with success message
+                if (request()->header('X-Inertia')) {
+                    return redirect()->back()->with('success', 'Project deployed successfully!');
+                }
+
+                // For AJAX requests, return JSON
+                if (request()->header('X-Requested-With') === 'XMLHttpRequest') {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Project deployed successfully!',
+                    ]);
+                }
+
+                return redirect()->back()->with('success', 'Project deployed successfully!');
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to deploy project. Please try again.',
-            ], 400);
+            // For Inertia requests, return back with error
+            if (request()->header('X-Inertia')) {
+                return redirect()->back()->withErrors(['error' => 'Failed to deploy project. Please try again.']);
+            }
+
+            // For AJAX requests, return JSON
+            if (request()->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to deploy project. Please try again.',
+                ], 400);
+            }
+
+            return redirect()->back()->withErrors(['error' => 'Failed to deploy project. Please try again.']);
 
         } catch (\Exception $e) {
             Log::error('Failed to deploy project', [
@@ -388,10 +417,20 @@ class DockerController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Deployment failed: '.$e->getMessage(),
-            ], 500);
+            // For Inertia requests, return back with error
+            if (request()->header('X-Inertia')) {
+                return redirect()->back()->withErrors(['error' => 'Deployment failed: '.$e->getMessage()]);
+            }
+
+            // For AJAX requests, return JSON
+            if (request()->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Deployment failed: '.$e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()->withErrors(['error' => 'Deployment failed: '.$e->getMessage()]);
         }
     }
 

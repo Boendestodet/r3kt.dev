@@ -47,13 +47,14 @@ Registration/Login → User Model → Session Management → Protected Routes
 ### 2. AI Website Generation Flow
 ```
 User Prompt → AI Provider Selection (Claude first, then OpenAI) → AI Analysis → 
-Website Type Detection → Next.js Project Generation → Code Storage → Project Ready
+Website Type Detection → Stack Selection (Next.js or Vite) → Project Generation → 
+Code Storage → Configuration File Protection → Project Ready
 ```
 
 ### 3. Docker Container Management Flow
 ```
-Project with Generated Code → Docker Container Creation → Next.js Dev Server → 
-Port Allocation → Live Preview URL → Real-time Website Preview
+Project with Generated Code → Stack Detection (Next.js/Vite) → Docker Container Creation → 
+Development Server (Next.js/Vite) → Port Allocation → Live Preview URL → Real-time Website Preview
 ```
 
 ### 4. AI Provider Fallback Pattern
@@ -63,24 +64,55 @@ Claude AI (Primary - 3.7x cheaper) → OpenAI (Backup) → Mock Generation (Fall
 
 ### 5. Docker Container Lifecycle Pattern
 ```
-Container Creation → Next.js Dev Server → Port Mapping → Live Preview → 
-Health Monitoring → Resource Cleanup → Container Termination
+Container Creation → Stack Detection → Dev Server (Next.js/Vite) → Port Mapping → 
+Live Preview → Health Monitoring → Resource Cleanup → Container Termination
 ```
 
-### 6. Project Management Flow
+### 6. Container Naming Pattern
+```
+Project Creation → Container ID Generation → Unique Name Creation → 
+Database Storage → Docker Container Creation → Live Preview
+```
+
+### 7. Project Management Flow
 ```
 CRUD Operations → Validation → Database Updates → Real-time UI Updates
 ```
 
-### 7. Cost Optimization Pattern
+### 8. Cost Optimization Pattern
 ```
 Token Usage Tracking → Cost Calculation → Provider Selection → Budget Management
 ```
 
-### 8. Sandbox Interface Flow
+### 9. Sandbox Interface Flow
 ```
 Project Selection → Deployment Modal → Progress Tracking → Sandbox Redirect → 
 Interactive Development (Chat, Console, Code Editor) → File Management → AI Integration
+```
+
+### 10. Project Creation Flow
+```
+User Input → Project Name Validation → Project Creation → Database Setup → 
+File System Setup → Project Verification → AI Code Generation → Wait for AI Completion → 
+Docker Deployment → Container Startup → Sandbox Redirect
+```
+
+### 11. Project Verification Pattern
+```
+Database Check → Folder Existence Check → Required Files Check → 
+Overall Status Assessment → Success/Partial/Failed Response → Continue/Stop Flow
+```
+
+### 12. Configuration File Protection Pattern
+```
+AI Generation → File Filtering → Protected Files Blocked → System Files Created → 
+Docker Configuration → Container Deployment → Live Preview
+```
+
+### 13. Multi-Stack Project Creation Pattern
+```
+User Input → Stack Selection (Next.js/Vite) → Project Type Detection → 
+Stack-Specific File Creation → Configuration Protection → Docker Setup → Live Preview
 ```
 
 ## AI Integration Patterns
@@ -111,14 +143,15 @@ Interactive Development (Chat, Console, Code Editor) → File Management → AI 
 ## Docker Container Patterns
 
 ### 1. Container Architecture
-- **Base Image**: Node.js 18 Alpine for Next.js projects
+- **Base Image**: Node.js 18 Alpine for both Next.js and Vite projects
 - **Development Mode**: Uses `npm run dev` for live previews
-- **No nginx Required**: Next.js built-in server handles everything
-- **Port Mapping**: Dynamic port allocation (8000+ range)
+- **No nginx Required**: Built-in development servers handle everything
+- **Port Mapping**: Dynamic port allocation (Next.js: 3000, Vite: 5173, mapped to 8000+ range)
+- **Stack Detection**: Automatic detection of project type for appropriate server configuration
 
 ### 2. Container Lifecycle Management
-- **Creation**: Dockerfile generation based on project type
-- **Startup**: Next.js development server with hot reload
+- **Creation**: Dockerfile generation based on project type (Next.js or Vite)
+- **Startup**: Development server with hot reload (Next.js or Vite)
 - **Monitoring**: Health checks and resource usage tracking
 - **Cleanup**: Automatic resource cleanup and container removal
 
@@ -139,6 +172,12 @@ Interactive Development (Chat, Console, Code Editor) → File Management → AI 
 - **Container Recovery**: Automatic restart on failure
 - **Resource Monitoring**: CPU, memory, and disk usage tracking
 - **Log Management**: Centralized logging and error reporting
+
+### 6. Multi-Stack Configuration Management
+- **Stack Detection**: Automatic detection based on project settings
+- **Configuration Protection**: AI cannot overwrite critical system files
+- **Independent Setups**: Separate configurations for Next.js and Vite projects
+- **Docker Optimization**: Stack-specific Dockerfiles and server configurations
 
 ## Key Technical Decisions
 
@@ -204,6 +243,16 @@ Interactive Development (Chat, Console, Code Editor) → File Management → AI 
 - **Auto-Resize Logic**: Intelligent height management with multiple strategies
 - **Dynamic Sizing**: Adaptive height based on content length (512px normal, 800px for long text)
 
+### 7. Project Creation Patterns
+- **Modal-Based Creation**: Non-intrusive project creation interface
+- **Progress Tracking**: Visual progress indicators with status messages
+- **State Persistence**: LocalStorage-based state recovery on page refresh
+- **Real-time Validation**: Debounced API calls for project name uniqueness
+- **Error Handling**: Comprehensive error messages and fallback mechanisms
+- **Verification System**: Multi-step verification of database and file system setup
+- **File Type Detection**: Smart detection of project type (Next.js vs HTML) for appropriate file creation
+- **AI Generation Waiting**: Proper waiting for AI generation completion before container startup
+
 ## Component Relationships
 
 ### Backend Components
@@ -239,3 +288,47 @@ Project (1) → (Many) Comments
 - **Caching**: Strategic caching for expensive operations
 - **Asset Optimization**: Vite for efficient bundling
 - **Database Indexing**: Optimized queries for common operations
+
+## Recent Fixes & Improvements
+
+### 1. File Creation Logic Fix
+- **Issue**: Both HTML and Next.js files were being created for Next.js projects
+- **Solution**: Added project type detection to create only appropriate files
+- **Pattern**: Smart file creation based on project settings
+- **Impact**: Cleaner project structure, no confusion about file types
+
+### 2. Container Start Timing Fix
+- **Issue**: Container start failing due to missing generated_code
+- **Solution**: Improved AI generation waiting logic with proper status checking
+- **Pattern**: Asynchronous job completion waiting with fallback mechanisms
+- **Impact**: Reliable container startup after AI generation
+
+### 3. AI Generation Waiting Pattern
+- **Issue**: Frontend not properly waiting for AI generation to complete
+- **Solution**: Enhanced waiting logic with project data checking
+- **Pattern**: Polling-based status checking with timeout handling
+- **Impact**: Better user experience with proper timing
+
+### 4. Error Handling Improvements
+- **Issue**: Limited error handling in project creation flow
+- **Solution**: Comprehensive error handling with clear user feedback
+- **Pattern**: Graceful degradation with fallback mechanisms
+- **Impact**: More robust system with better user experience
+
+### 5. Multi-Stack Integration
+- **Issue**: Only Next.js support, limited frontend framework options
+- **Solution**: Added complete Vite + React + TypeScript support alongside Next.js
+- **Pattern**: Stack detection and independent configuration management
+- **Impact**: Users can choose between Next.js and Vite for their projects
+
+### 6. Configuration File Protection
+- **Issue**: AI could overwrite critical system configuration files
+- **Solution**: Implemented file protection system with AI prompt restrictions
+- **Pattern**: Protected file filtering and system-generated configuration override
+- **Impact**: Reliable project setup with consistent Docker-compatible configurations
+
+### 7. Container Naming System Fix
+- **Issue**: Docker container naming causing duplicate entry errors in database
+- **Solution**: Implemented unique container naming with project ID and container ID combination
+- **Pattern**: `lovable-container-{project_id}-{container_id}` for unique identification
+- **Impact**: Prevents database constraint violations and ensures proper container management

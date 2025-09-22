@@ -40,12 +40,15 @@ class AIWebsiteGenerator
             foreach ($providers as $provider) {
                 try {
                     Log::info("Attempting to generate website with {$provider['name']}");
-                    $result = $provider['service']->generateWebsite($prompt->prompt);
-                    $nextjsProject = $result['project'];
+                    
+                    // Determine project type from project settings
+                    $projectType = $this->getProjectType($prompt->project);
+                    $result = $provider['service']->generateWebsite($prompt->prompt, $projectType);
+                    $generatedProject = $result['project'];
 
                     // Update the prompt with the response
                     $prompt->update([
-                        'response' => json_encode($nextjsProject),
+                        'response' => json_encode($generatedProject),
                         'status' => 'completed',
                         'processed_at' => now(),
                         'tokens_used' => $result['tokens_used'],
@@ -53,14 +56,14 @@ class AIWebsiteGenerator
                             'model' => $result['model'],
                             'temperature' => $provider['temperature'],
                             'max_tokens' => $provider['max_tokens'],
-                            'project_type' => 'nextjs',
+                            'project_type' => $projectType,
                             'ai_provider' => $provider['name'],
                         ],
                     ]);
 
-                    // Update the project with the generated Next.js project
+                    // Update the project with the generated project
                     $prompt->project->update([
-                        'generated_code' => json_encode($nextjsProject),
+                        'generated_code' => json_encode($generatedProject),
                         'status' => 'ready',
                         'last_built_at' => now(),
                     ]);
@@ -96,6 +99,28 @@ class AIWebsiteGenerator
 
             // Fallback to mock generation
             $this->generateWithFallback($prompt);
+        }
+    }
+
+    /**
+     * Get project type from project settings
+     */
+    private function getProjectType(Project $project): string
+    {
+        $settings = $project->settings ?? [];
+        $stack = $settings['stack'] ?? '';
+        
+        // Map stack names to project types
+        switch ($stack) {
+            case 'vite':
+            case 'Vite + React':
+                return 'vite';
+            case 'nextjs':
+            case 'Next.js':
+                return 'nextjs';
+            default:
+                // Default to Next.js for backward compatibility
+                return 'nextjs';
         }
     }
 
@@ -137,12 +162,13 @@ class AIWebsiteGenerator
         try {
             Log::info('Using fallback mock generation for prompt: '.$prompt->id);
 
-            // Generate mock Next.js project based on the prompt
-            $nextjsProject = $this->generateMockWebsite($prompt->prompt);
+            // Determine project type and generate appropriate mock project
+            $projectType = $this->getProjectType($prompt->project);
+            $mockProject = $this->generateMockWebsite($prompt->prompt, $projectType);
 
             // Update the prompt with the response
             $prompt->update([
-                'response' => json_encode($nextjsProject),
+                'response' => json_encode($mockProject),
                 'status' => 'completed',
                 'processed_at' => now(),
                 'tokens_used' => rand(100, 500),
@@ -150,14 +176,14 @@ class AIWebsiteGenerator
                     'model' => 'mock-fallback',
                     'temperature' => 0.7,
                     'max_tokens' => 2000,
-                    'project_type' => 'nextjs',
+                    'project_type' => $projectType,
                     'ai_provider' => 'mock',
                 ],
             ]);
 
-            // Update the project with the generated Next.js project
+            // Update the project with the generated project
             $prompt->project->update([
-                'generated_code' => json_encode($nextjsProject),
+                'generated_code' => json_encode($mockProject),
                 'status' => 'ready',
                 'last_built_at' => now(),
             ]);
@@ -183,26 +209,44 @@ class AIWebsiteGenerator
     }
 
     /**
-     * Generate mock Next.js project based on prompt
+     * Generate mock project based on prompt and project type
      */
-    private function generateMockWebsite(string $prompt): array
+    private function generateMockWebsite(string $prompt, string $projectType = 'nextjs'): array
     {
         // Analyze the prompt to determine the type of website
         $websiteType = $this->analyzePrompt($prompt);
 
-        switch ($websiteType) {
-            case 'portfolio':
-                return $this->generateNextJSPortfolio($prompt);
-            case 'ecommerce':
-                return $this->generateNextJSEcommerce($prompt);
-            case 'blog':
-                return $this->generateNextJSBlog($prompt);
-            case 'landing':
-                return $this->generateNextJSLanding($prompt);
-            case 'dashboard':
-                return $this->generateNextJSDashboard($prompt);
-            default:
-                return $this->generateNextJSGeneric($prompt);
+        if ($projectType === 'vite') {
+            switch ($websiteType) {
+                case 'portfolio':
+                    return $this->generateVitePortfolio($prompt);
+                case 'ecommerce':
+                    return $this->generateViteEcommerce($prompt);
+                case 'blog':
+                    return $this->generateViteBlog($prompt);
+                case 'landing':
+                    return $this->generateViteLanding($prompt);
+                case 'dashboard':
+                    return $this->generateViteDashboard($prompt);
+                default:
+                    return $this->generateViteGeneric($prompt);
+            }
+        } else {
+            // Default to Next.js
+            switch ($websiteType) {
+                case 'portfolio':
+                    return $this->generateNextJSPortfolio($prompt);
+                case 'ecommerce':
+                    return $this->generateNextJSEcommerce($prompt);
+                case 'blog':
+                    return $this->generateNextJSBlog($prompt);
+                case 'landing':
+                    return $this->generateNextJSLanding($prompt);
+                case 'dashboard':
+                    return $this->generateNextJSDashboard($prompt);
+                default:
+                    return $this->generateNextJSGeneric($prompt);
+            }
         }
     }
 
@@ -904,5 +948,345 @@ body {
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Generate Vite + React + TypeScript portfolio project
+     */
+    private function generateVitePortfolio(string $prompt): array
+    {
+        return [
+            'package.json' => json_encode([
+                'name' => 'portfolio-website',
+                'private' => true,
+                'version' => '0.0.0',
+                'type' => 'module',
+                'scripts' => [
+                    'dev' => 'vite',
+                    'build' => 'tsc && vite build',
+                    'lint' => 'eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0',
+                    'preview' => 'vite preview',
+                ],
+                'dependencies' => [
+                    'react' => '^18.2.0',
+                    'react-dom' => '^18.2.0',
+                ],
+                'devDependencies' => [
+                    '@types/react' => '^18.2.66',
+                    '@types/react-dom' => '^18.2.22',
+                    '@typescript-eslint/eslint-plugin' => '^7.2.0',
+                    '@typescript-eslint/parser' => '^7.2.0',
+                    '@vitejs/plugin-react' => '^4.2.1',
+                    'eslint' => '^8.57.0',
+                    'eslint-plugin-react-hooks' => '^4.6.0',
+                    'eslint-plugin-react-refresh' => '^0.4.6',
+                    'typescript' => '^5.2.2',
+                    'vite' => '^5.2.0',
+                    'tailwindcss' => '^3.4.0',
+                    'autoprefixer' => '^10.4.17',
+                    'postcss' => '^8.4.35',
+                ],
+            ], JSON_PRETTY_PRINT),
+            'src/App.tsx' => 'import { useState } from \'react\'
+import \'./App.css\'
+
+function App() {
+  const [activeSection, setActiveSection] = useState(\'home\')
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold text-gray-900">Portfolio</h1>
+            </div>
+            <div className="flex space-x-8">
+              <button 
+                onClick={() => setActiveSection(\'home\')}
+                className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Home
+              </button>
+              <button 
+                onClick={() => setActiveSection(\'about\')}
+                className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                About
+              </button>
+              <button 
+                onClick={() => setActiveSection(\'projects\')}
+                className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Projects
+              </button>
+              <button 
+                onClick={() => setActiveSection(\'contact\')}
+                className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Contact
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {activeSection === \'home\' && (
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
+              Welcome to My Portfolio
+            </h1>
+            <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+              A showcase of my work and skills in web development
+            </p>
+            <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
+              <button 
+                onClick={() => setActiveSection(\'projects\')}
+                className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
+              >
+                View My Work
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeSection === \'about\' && (
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900">About Me</h2>
+            <p className="mt-4 text-lg text-gray-600">
+              I am a passionate web developer with expertise in React, TypeScript, and modern web technologies. 
+              I love creating beautiful, functional, and user-friendly applications.
+            </p>
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold text-gray-900">Skills</h3>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {[\'React\', \'TypeScript\', \'Vite\', \'Tailwind CSS\', \'Node.js\', \'Git\'].map((skill) => (
+                  <span key={skill} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === \'projects\' && (
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">My Projects</h2>
+            <div className="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                { title: \'E-commerce Platform\', description: \'Full-stack e-commerce solution with React and Node.js\' },
+                { title: \'Task Management App\', description: \'Collaborative task management with real-time updates\' },
+                { title: \'Portfolio Website\', description: \'Responsive portfolio built with React and Tailwind CSS\' },
+              ].map((project, index) => (
+                <div key={index} className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <h3 className="text-lg font-medium text-gray-900">{project.title}</h3>
+                    <p className="mt-2 text-sm text-gray-600">{project.description}</p>
+                    <div className="mt-4">
+                      <button className="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                        View Project →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeSection === \'contact\' && (
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900">Get In Touch</h2>
+            <p className="mt-4 text-lg text-gray-600">
+              I would love to hear from you. Send me a message and I will respond as soon as possible.
+            </p>
+            <form className="mt-8 space-y-6">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700">
+                  Message
+                </label>
+                <textarea
+                  id="message"
+                  rows={4}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <button
+                  type="submit"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Send Message
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
+
+export default App',
+            'src/App.css' => '.App {
+  text-align: center;
+}',
+            'src/index.css' => '@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', \'Roboto\', \'Oxygen\',
+    \'Ubuntu\', \'Cantarell\', \'Fira Sans\', \'Droid Sans\', \'Helvetica Neue\',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, \'Courier New\',
+    monospace;
+}',
+        ];
+    }
+
+    /**
+     * Generate Vite + React + TypeScript generic project
+     */
+    private function generateViteGeneric(string $prompt): array
+    {
+        return [
+            'package.json' => json_encode([
+                'name' => 'ai-generated-project',
+                'private' => true,
+                'version' => '0.0.0',
+                'type' => 'module',
+                'scripts' => [
+                    'dev' => 'vite',
+                    'build' => 'tsc && vite build',
+                    'lint' => 'eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0',
+                    'preview' => 'vite preview',
+                ],
+                'dependencies' => [
+                    'react' => '^18.2.0',
+                    'react-dom' => '^18.2.0',
+                ],
+                'devDependencies' => [
+                    '@types/react' => '^18.2.66',
+                    '@types/react-dom' => '^18.2.22',
+                    '@typescript-eslint/eslint-plugin' => '^7.2.0',
+                    '@typescript-eslint/parser' => '^7.2.0',
+                    '@vitejs/plugin-react' => '^4.2.1',
+                    'eslint' => '^8.57.0',
+                    'eslint-plugin-react-hooks' => '^4.6.0',
+                    'eslint-plugin-react-refresh' => '^0.4.6',
+                    'typescript' => '^5.2.2',
+                    'vite' => '^5.2.0',
+                    'tailwindcss' => '^3.4.0',
+                    'autoprefixer' => '^10.4.17',
+                    'postcss' => '^8.4.35',
+                ],
+            ], JSON_PRETTY_PRINT),
+            'src/App.tsx' => 'import { useState } from \'react\'
+import \'./App.css\'
+
+function App() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="p-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Welcome to Your Vite + React Project
+          </h1>
+          <p className="text-gray-600 mb-6">
+            This project was generated based on your prompt: "{prompt}"
+          </p>
+          <div className="text-center">
+            <button
+              onClick={() => setCount((count) => count + 1)}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Count is {count}
+            </button>
+            <p className="mt-4 text-sm text-gray-500">
+              Edit <code className="bg-gray-100 px-2 py-1 rounded">src/App.tsx</code> and save to test HMR
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default App',
+            'src/App.css' => '.App {
+  text-align: center;
+}',
+            'src/index.css' => '@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', \'Roboto\', \'Oxygen\',
+    \'Ubuntu\', \'Cantarell\', \'Fira Sans\', \'Droid Sans\', \'Helvetica Neue\',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, \'Courier New\',
+    monospace;
+}',
+        ];
+    }
+
+    // Add placeholder methods for other Vite project types
+    private function generateViteEcommerce(string $prompt): array
+    {
+        return $this->generateViteGeneric($prompt);
+    }
+
+    private function generateViteBlog(string $prompt): array
+    {
+        return $this->generateViteGeneric($prompt);
+    }
+
+    private function generateViteLanding(string $prompt): array
+    {
+        return $this->generateViteGeneric($prompt);
+    }
+
+    private function generateViteDashboard(string $prompt): array
+    {
+        return $this->generateViteGeneric($prompt);
     }
 }

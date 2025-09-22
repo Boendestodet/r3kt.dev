@@ -20,6 +20,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Project routes
     Route::resource('projects', App\Http\Controllers\ProjectController::class);
     Route::post('projects/{project}/duplicate', [App\Http\Controllers\ProjectController::class, 'duplicate'])->name('projects.duplicate');
+    Route::get('api/projects/check-name', [App\Http\Controllers\ProjectController::class, 'checkName'])->name('projects.check-name');
+    Route::get('api/projects/{project}', [App\Http\Controllers\ProjectController::class, 'showApi'])->name('projects.show-api');
+    Route::get('api/projects/{project}/verify-setup', [App\Http\Controllers\ProjectController::class, 'verifySetup'])->name('projects.verify-setup');
     Route::get('projects/{project}/sandbox', function ($projectId) {
         return Inertia::render('projects/Sandbox', [
             'project' => [

@@ -37,7 +37,7 @@ test('user can view their project', function () {
     $response = $this->get(route('projects.show', $project));
 
     $response->assertStatus(200);
-    $response->assertInertia(fn ($page) => $page->component('projects/Show'));
+    $response->assertInertia(fn ($page) => $page->component('projects/Sandbox'));
 });
 
 test('user can update their project', function () {

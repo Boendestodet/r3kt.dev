@@ -29,6 +29,11 @@ Create a platform where users can:
 - ✅ **NEW**: Professional GitHub repository with documentation
 - ✅ **NEW**: Real Docker container management with live previews
 - ✅ **NEW**: Next.js development server in containers (no nginx needed)
+- ✅ **NEW**: Fixed Next.js file creation logic (no more duplicate HTML files)
+- ✅ **NEW**: Fixed container start timing issues with AI generation
+- ✅ **NEW**: Vite + React + TypeScript stack support with complete Docker integration
+- ✅ **NEW**: Configuration file protection system preventing AI overwrites
+- ✅ **NEW**: Multi-stack support (Next.js and Vite) with independent configurations
 
 ## Technical Constraints
 - Must use Laravel 12 with PHP 8.3

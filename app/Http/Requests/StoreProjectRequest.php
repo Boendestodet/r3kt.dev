@@ -22,7 +22,7 @@ class StoreProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:projects,name,NULL,id,user_id,' . auth()->id()],
             'description' => ['nullable', 'string', 'max:1000'],
             'settings' => ['nullable', 'array'],
         ];
@@ -36,6 +36,7 @@ class StoreProjectRequest extends FormRequest
         return [
             'name.required' => 'Project name is required.',
             'name.max' => 'Project name must not exceed 255 characters.',
+            'name.unique' => 'A project with this name already exists. Please choose a different name.',
             'description.max' => 'Description must not exceed 1000 characters.',
         ];
     }

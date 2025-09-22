@@ -11,6 +11,11 @@ class ProcessPromptJob implements ShouldQueue
 {
     use Queueable;
 
+    /**
+     * The number of seconds the job can run before timing out.
+     */
+    public int $timeout = 300; // 5 minutes
+
     public function __construct(
         public Prompt $prompt
     ) {}

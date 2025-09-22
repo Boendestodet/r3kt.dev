@@ -10,6 +10,8 @@ use App\Services\CollaborationService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PromptController extends Controller
 {
@@ -21,7 +23,7 @@ class PromptController extends Controller
         //
     }
 
-    public function store(StorePromptRequest $request, Project $project): JsonResponse
+    public function store(StorePromptRequest $request, Project $project)
     {
         $this->authorize('update', $project);
 
@@ -41,6 +43,26 @@ class PromptController extends Controller
             ? 'Prompt submitted successfully! AI is processing your request and will automatically start a container when ready.'
             : 'Prompt submitted successfully! AI is processing your request.';
 
+        // For Inertia requests, return back with the prompt data
+        if (request()->header('X-Inertia')) {
+            return redirect()->back()->with([
+                'prompt' => $prompt,
+                'message' => $message,
+                'auto_start_container' => $request->boolean('auto_start_container', false),
+            ]);
+        }
+
+        // For AJAX requests, return JSON
+        if (request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => true,
+                'prompt' => $prompt,
+                'message' => $message,
+                'auto_start_container' => $request->boolean('auto_start_container', false),
+            ]);
+        }
+
+        // Fallback JSON response
         return response()->json([
             'prompt' => $prompt,
             'message' => $message,

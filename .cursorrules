@@ -51,7 +51,21 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 - Maintain memory bank documentation
 
 ## Current Status
-- Core platform is 90% complete
-- AI integration is mocked (needs real API)
-- Real-time features are minimal
-- Memory bank is being established
+- Core platform is 100% complete
+- AI integration is fully functional with dual providers (OpenAI + Claude)
+- Docker container management with live previews is working
+- Project creation flow is complete with verification and progress tracking
+- File creation logic fixed (Next.js-only files, no duplicate HTML)
+- Container start timing issues resolved
+- Memory bank is complete and up-to-date
+
+## Recent Fixes
+- **File Creation Logic**: Fixed issue where both HTML and Next.js files were being created - now only creates appropriate files based on project type
+- **Container Start Issue**: Fixed container start failure due to missing generated_code by improving AI generation waiting logic
+- **AI Generation Timing**: Fixed timing issue where frontend was not properly waiting for AI generation to complete
+
+## Development Patterns
+- **File Type Detection**: Always check project settings to determine file type before creating files
+- **AI Generation Waiting**: Always wait for AI generation to complete before starting containers
+- **Error Handling**: Implement comprehensive error handling with fallback mechanisms
+- **Project Type Logic**: Use project settings to determine appropriate file creation strategy

@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { router, useForm } from "@inertiajs/react"
 
 const Plus = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,6 +182,176 @@ export default function VibecodeSandboxPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarHidden, setSidebarHidden] = useState(false)
   const [showDeploymentModal, setShowDeploymentModal] = useState(false)
+  
+  // New project creation states
+  const [projectName, setProjectName] = useState("")
+  const [projectDescription, setProjectDescription] = useState("")
+  const [projectPrompt, setProjectPrompt] = useState("")
+  const [isCreatingProject, setIsCreatingProject] = useState(false)
+  const [creationProgress, setCreationProgress] = useState(0)
+  const [creationStatus, setCreationStatus] = useState("")
+  const [createdProject, setCreatedProject] = useState<{id: number, name: string} | null>(null)
+  const [isFromDeploy, setIsFromDeploy] = useState(false)
+  const [validationError, setValidationError] = useState("")
+  const [nameError, setNameError] = useState("")
+  const [isCheckingName, setIsCheckingName] = useState(false)
+  const [creationState, setCreationState] = useState<{
+    isActive: boolean
+    projectId?: number
+    promptId?: number
+    step: 'project' | 'ai' | 'docker' | 'start' | 'complete'
+  } | null>(null)
+
+  // Inertia forms for all operations
+  const projectForm = useForm({
+    name: '',
+    description: '',
+    settings: {
+      ai_model: 'gpt-4',
+      stack: 'nextjs',
+      auto_deploy: true
+    }
+  })
+
+  const aiForm = useForm({
+    prompt: '',
+    auto_start_container: true
+  })
+
+  const deployForm = useForm({})
+  const startForm = useForm({})
+
+  // Helper function to get CSRF token
+  const getCsrfToken = (): string => {
+    // Try meta tag first
+    let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    
+    // Fallback: try to get from cookies
+    if (!csrfToken) {
+      const cookies = document.cookie.split(';')
+      for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=')
+        if (name === 'XSRF-TOKEN') {
+          csrfToken = decodeURIComponent(value)
+          break
+        }
+      }
+    }
+    
+    // If still no token, try to get it from the page
+    if (!csrfToken) {
+      // Try to get from window object if available
+      csrfToken = (window as any).Laravel?.csrfToken || (window as any).csrfToken
+    }
+    
+    if (!csrfToken) {
+      console.error('CSRF token not found in meta tag, cookies, or window object')
+      throw new Error('CSRF token not found. Please refresh the page and try again.')
+    }
+    
+    return csrfToken
+  }
+
+  // Persist creation state to localStorage
+  const saveCreationState = (state: typeof creationState) => {
+    if (state) {
+      localStorage.setItem('projectCreationState', JSON.stringify(state))
+    } else {
+      localStorage.removeItem('projectCreationState')
+    }
+  }
+
+  // Load creation state from localStorage on mount (only once)
+  useEffect(() => {
+    const savedState = localStorage.getItem('projectCreationState')
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState)
+        if (state.isActive) {
+          console.log('Resuming project creation from saved state:', state)
+          setCreationState(state)
+          setIsCreatingProject(true)
+          setCreationProgress(20) // Start from a reasonable point
+          setCreationStatus("Resuming project creation...")
+          
+          // Open the modal if it's not already open
+          setShowNewProjectModal(true)
+          
+          // Resume the creation flow based on the step
+          if (state.step === 'ai' && state.projectId && state.promptId) {
+            waitForAIGeneration(state.projectId, state.promptId)
+          } else if (state.step === 'docker' && state.projectId) {
+            deployToDocker(state.projectId)
+          } else if (state.step === 'start' && state.projectId) {
+            startContainer(state.projectId)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to parse saved creation state:', error)
+        localStorage.removeItem('projectCreationState')
+      }
+    }
+  }, []) // Only run once on mount
+
+  // Save creation state whenever it changes
+  useEffect(() => {
+    saveCreationState(creationState)
+  }, [creationState])
+
+  // Note: Removed beforeunload protection as it was interfering with browser refresh
+
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('Modal state changed:', {
+      showNewProjectModal,
+      isCreatingProject,
+      creationState: creationState?.isActive ? creationState : null
+    })
+  }, [showNewProjectModal, isCreatingProject, creationState])
+
+  // Prevent modal from closing if we're in creation state
+  useEffect(() => {
+    if (isCreatingProject && creationState?.isActive && !showNewProjectModal) {
+      console.log('Preventing modal from closing during creation - reopening modal')
+      setShowNewProjectModal(true)
+    }
+  }, [isCreatingProject, creationState, showNewProjectModal])
+
+  // Function to safely close modal (only when not creating)
+  const safeCloseModal = () => {
+    if (isCreatingProject && creationState?.isActive) {
+      console.log('Cannot close modal during active project creation')
+      return false
+    }
+    
+    console.log('Closing modal safely')
+    setShowNewProjectModal(false)
+    // Reset form when closing
+    setProjectName("")
+    setProjectDescription("")
+    setProjectPrompt("")
+    setValidationError("")
+    setNameError("")
+    setIsCreatingProject(false)
+    setCreationProgress(0)
+    setCreationStatus("")
+    setCreatedProject(null)
+    setCreationState(null)
+    return true
+  }
+
+  // Debounced project name checking
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (projectName.trim()) {
+        checkProjectName(projectName)
+      } else {
+        setNameError("")
+      }
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timeoutId)
+  }, [projectName])
 
   const models = [
     {
@@ -272,24 +443,17 @@ export default function VibecodeSandboxPage() {
 
   const handleDeploy = () => {
     if (selectedModel && selectedStack) {
-      setShowDeploymentModal(true)
-      setIsDeploying(true)
-      setDeploymentProgress(0)
-
-      const interval = setInterval(() => {
-        setDeploymentProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval)
-            setIsDeploying(false)
-            setTimeout(() => {
-              // Redirect to sandbox page after successful deployment
-              window.location.href = `/projects/1/sandbox`
-            }, 1000)
-            return 100
-          }
-          return prev + 10
-        })
-      }, 200)
+      // Open the new project creation modal instead of deployment modal
+      setShowNewProjectModal(true)
+      setProjectName("")
+      setProjectDescription("")
+      setProjectPrompt("")
+      setIsCreatingProject(false)
+      setCreationProgress(0)
+      setCreationStatus("")
+      setCreatedProject(null)
+      setIsFromDeploy(true)
+      setValidationError("")
     }
   }
 
@@ -303,10 +467,567 @@ export default function VibecodeSandboxPage() {
 
   const handleNewProject = () => {
     setShowNewProjectModal(true)
-    setTimeout(() => {
-      setShowNewProjectModal(false)
-      alert("New project created!")
-    }, 1500)
+    setProjectName("")
+    setProjectDescription("")
+    setProjectPrompt("")
+    setIsCreatingProject(false)
+    setCreationProgress(0)
+    setCreationStatus("")
+    setCreatedProject(null)
+    setIsFromDeploy(false)
+    setValidationError("")
+    setNameError("")
+  }
+
+  const checkProjectName = async (name: string) => {
+    if (!name.trim()) {
+      setNameError("")
+      return
+    }
+
+    setIsCheckingName(true)
+    try {
+        // Use fetch for real-time name checking (no page reload)
+        const response = await fetch(`/api/projects/check-name?name=${encodeURIComponent(name)}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.exists) {
+            setNameError("A project with this name already exists. Please choose a different name.")
+          } else {
+            setNameError("")
+          }
+        }
+    } catch (error) {
+      console.error('Error checking project name:', error)
+    } finally {
+      setIsCheckingName(false)
+    }
+  }
+
+  const handleCreateProject = () => {
+    setValidationError("")
+    
+    if (!projectName.trim() || !projectPrompt.trim()) {
+      setValidationError("Please fill in project name and AI prompt")
+      return
+    }
+
+    if (nameError) {
+      setValidationError("Please fix the project name error before creating the project")
+      return
+    }
+
+    if (!selectedModel || !selectedStack) {
+      setValidationError("Please select both an AI model and a stack from the main interface")
+      return
+    }
+
+    setIsCreatingProject(true)
+    setCreationProgress(0)
+    setCreationStatus("Initializing project...")
+
+    // Set initial creation state
+    setCreationState({
+      isActive: true,
+      step: 'project'
+    })
+
+    // Step 1: Create the project using Inertia form (no page reload)
+    setCreationProgress(5)
+    setCreationStatus("Creating project and setting up the docker container...")
+    
+    console.log('Creating project with:', {
+      name: projectName,
+      description: projectDescription || `AI-generated project: ${projectPrompt}`,
+      settings: {
+        ai_model: selectedModel,
+        stack: selectedStack,
+        auto_deploy: true
+      }
+    })
+    
+    // Use router.post with preserveState to prevent page refresh and ensure data is sent
+    router.post('/projects', {
+      name: projectName,
+      description: projectDescription || `AI-generated project: ${projectPrompt}`,
+      settings: {
+        ai_model: selectedModel,
+        stack: selectedStack,
+        auto_deploy: true
+      }
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+      only: ['createdProject'],
+      onStart: () => {
+        console.log('Starting project creation...')
+        console.log('Data being sent:', {
+          name: projectName,
+          description: projectDescription || `AI-generated project: ${projectPrompt}`,
+          settings: {
+            ai_model: selectedModel,
+            stack: selectedStack,
+            auto_deploy: true
+          }
+        })
+      },
+      onProgress: (progress: any) => {
+        console.log('Project creation progress:', progress)
+      },
+      onSuccess: (page: any) => {
+        console.log('Project created successfully:', page)
+        // Get project from props
+        const project = page.props?.createdProject
+        if (project) {
+          setCreatedProject({ id: project.id, name: project.name })
+          setCreationProgress(10)
+          setCreationStatus("Checking container...")
+          
+          // Update creation state
+          setCreationState({
+            isActive: true,
+            projectId: project.id,
+            step: 'project'
+          })
+          
+          // Step 1.5: Verify project setup (database + files)
+          verifyProjectSetup(project.id)
+        }
+      },
+      onError: (errors: any) => {
+        console.error('Project creation failed:', errors)
+        setCreationStatus(`Error: ${Object.values(errors).join(', ')}`)
+        setIsCreatingProject(false)
+        setValidationError(Object.values(errors).join(', '))
+        // Clear creation state on failure
+        setCreationState(null)
+      }
+    })
+  }
+
+  const verifyProjectSetup = (projectId: number) => {
+    console.log('Verifying project setup for project:', projectId)
+    
+    // Add a timeout fallback in case verification gets stuck
+    const verificationTimeout = setTimeout(() => {
+      console.warn('Verification timeout - proceeding anyway')
+      setCreationProgress(15)
+      setCreationStatus("Verification timeout - proceeding to code generation...")
+      
+      setTimeout(() => {
+        setCreationProgress(20)
+        setCreationStatus("Generating the code...")
+        generateAICode(projectId)
+      }, 1000)
+    }, 5000) // 5 second timeout
+    
+    // Use fetch for verification to avoid Inertia complications
+    fetch(`/api/projects/${projectId}/verify-setup`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => {
+      console.log('Verification response status:', response.status)
+      console.log('Verification response headers:', response.headers)
+      return response.json()
+    })
+    .then(data => {
+      console.log('Project verification completed:', data)
+      clearTimeout(verificationTimeout) // Clear the timeout since we got a response
+      const verification = data.verification
+      
+      if (verification) {
+        console.log('Verification results:', verification)
+        
+        if (verification.overall_status === 'success') {
+          setCreationProgress(15)
+          setCreationStatus("Project verified successfully! Generating code...")
+          
+          // Add a small delay to show the verification success
+          setTimeout(() => {
+            setCreationProgress(20)
+            setCreationStatus("Generating the code...")
+            
+            // Step 2: Generate AI code
+            generateAICode(projectId)
+          }, 1000)
+        } else if (verification.overall_status === 'partial') {
+          setCreationProgress(15)
+          setCreationStatus("Project partially verified. Some files missing, but continuing...")
+          
+          // Add a small delay to show the partial verification
+          setTimeout(() => {
+            setCreationProgress(20)
+            setCreationStatus("Generating the code...")
+            
+            // Step 2: Generate AI code
+            generateAICode(projectId)
+          }, 1000)
+        } else {
+          setCreationStatus(`Error: Project verification failed. Database: ${verification.database_exists ? 'OK' : 'FAIL'}, Folder: ${verification.folder_exists ? 'OK' : 'FAIL'}, Files: ${verification.all_files_present ? 'OK' : 'FAIL'}`)
+          setIsCreatingProject(false)
+          setValidationError('Project verification failed. Please try again.')
+          setCreationState(null)
+        }
+      } else {
+        console.error('No verification data received')
+        setCreationStatus("Error: No verification data received")
+        setIsCreatingProject(false)
+        setValidationError('Project verification failed. Please try again.')
+        setCreationState(null)
+      }
+    })
+    .catch(error => {
+      console.error('Project verification failed:', error)
+      clearTimeout(verificationTimeout) // Clear the timeout on error too
+      setCreationStatus(`Error: Project verification failed - ${error.message}`)
+      setIsCreatingProject(false)
+      setValidationError('Project verification failed. Please try again.')
+      setCreationState(null)
+    })
+  }
+
+  const generateAICode = (projectId: number) => {
+    console.log('Generating AI code for project:', projectId)
+    
+    // Use router.post with preserveState to generate AI code (no page reload)
+    router.post(`/projects/${projectId}/prompts`, {
+      prompt: projectPrompt,
+      auto_start_container: true
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+      only: ['flash'],
+      onStart: () => {
+        console.log('Starting AI code generation...')
+      },
+      onProgress: (progress: any) => {
+        console.log('AI generation progress:', progress)
+      },
+      onSuccess: (page: any) => {
+        console.log('AI code generated:', page)
+        console.log('Flash data:', page.props?.flash)
+        
+        // Get prompt data from flash message
+        const prompt = page.props?.flash?.prompt
+        console.log('Prompt data:', prompt)
+        
+        if (prompt) {
+          setCreationProgress(20)
+          setCreationStatus("Generating the code...")
+          
+          // Update creation state
+          setCreationState({
+            isActive: true,
+            projectId: projectId,
+            promptId: prompt.id,
+            step: 'ai'
+          })
+          
+          // Step 3: Wait for AI generation to complete
+          waitForAIGeneration(projectId, prompt.id)
+        } else {
+          console.warn('No prompt data found in flash message, but continuing with AI generation...')
+          setCreationProgress(20)
+          setCreationStatus("Generating the code...")
+          
+          // Update creation state without prompt ID
+          setCreationState({
+            isActive: true,
+            projectId: projectId,
+            step: 'ai'
+          })
+          
+          // Wait for AI generation to complete by checking the latest prompt for this project
+          waitForAIGenerationByProject(projectId)
+        }
+      },
+      onError: (errors: any) => {
+        console.error('AI generation failed:', errors)
+        setCreationStatus(`Error: ${Object.values(errors).join(', ')}`)
+        setIsCreatingProject(false)
+        setValidationError(Object.values(errors).join(', '))
+        // Clear creation state on failure
+        setCreationState(null)
+      }
+    })
+  }
+
+  const waitForAIGeneration = async (projectId: number, promptId: number) => {
+    const maxAttempts = 60 // 5 minutes max (5 seconds * 60 attempts)
+    let attempts = 0
+
+    const checkStatus = async () => {
+      try {
+        attempts++
+        console.log(`Checking AI generation status (attempt ${attempts}/${maxAttempts})`)
+        
+        // Use Inertia with lazy loading to check AI generation status
+        router.get(`/prompts/${promptId}/status`, {}, {
+          onStart: () => {
+            console.log('Checking AI generation status...')
+          },
+          onSuccess: (page) => {
+            const data = (page as any).props
+            console.log('Prompt status:', data)
+            
+            if (data.status === 'completed') {
+              setCreationProgress(50)
+              setCreationStatus("Starting the project...")
+              
+              // Update creation state
+              setCreationState({
+                isActive: true,
+                projectId: projectId,
+                promptId: promptId,
+                step: 'docker'
+              })
+              
+              // Step 4: Deploy to Docker
+              deployToDocker(projectId)
+              return
+            } else if (data.status === 'failed') {
+              setCreationStatus(`Error: AI generation failed - ${data.response || 'Unknown error'}`)
+              setIsCreatingProject(false)
+              setValidationError('AI generation failed')
+              // Clear creation state on failure
+              setCreationState(null)
+              return
+            } else if (data.status === 'pending' || data.status === 'processing') {
+              // Update progress based on time elapsed
+              const progress = Math.min(20 + (attempts * 1.5), 50) // Gradually increase from 20% to 50%
+              setCreationProgress(progress)
+              setCreationStatus(`Generating the code... (${attempts * 5}s elapsed)`)
+              
+              if (attempts < maxAttempts) {
+                setTimeout(checkStatus, 5000) // Check again in 5 seconds
+              } else {
+                setCreationStatus("Error: AI generation timed out")
+                setIsCreatingProject(false)
+                setValidationError('AI generation timed out')
+              }
+            }
+          },
+          onError: (errors) => {
+            console.error('Failed to check prompt status:', errors)
+            if (attempts < maxAttempts) {
+              setTimeout(checkStatus, 5000) // Retry in 5 seconds
+            } else {
+              setCreationStatus("Error: Failed to check AI generation status")
+              setIsCreatingProject(false)
+              setValidationError('Failed to check AI generation status')
+            }
+          }
+        })
+      } catch (error) {
+        console.error('Error checking AI generation status:', error)
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 5000) // Retry in 5 seconds
+        } else {
+          setCreationStatus("Error: Failed to check AI generation status")
+          setIsCreatingProject(false)
+          setValidationError('Failed to check AI generation status')
+        }
+      }
+    }
+
+    // Start checking status
+    checkStatus()
+  }
+
+  const waitForAIGenerationByProject = async (projectId: number) => {
+    const maxAttempts = 60 // 5 minutes max (5 seconds * 60 attempts)
+    let attempts = 0
+
+    const checkProjectStatus = async () => {
+      try {
+        attempts++
+        console.log(`Checking project AI generation status (attempt ${attempts}/${maxAttempts})`)
+        
+        // Check if the project has generated_code
+        const response = await fetch(`/api/projects/${projectId}/verify-setup`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Project verification data:', data)
+          
+          // Check if project has generated_code by looking at the project directly
+          const projectResponse = await fetch(`/api/projects/${projectId}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          })
+          
+          if (projectResponse.ok) {
+            const projectData = await projectResponse.json()
+            console.log('Project data:', projectData)
+            
+            if (projectData.project && projectData.project.generated_code) {
+              setCreationProgress(50)
+              setCreationStatus("Code generation complete! Deploying to Docker...")
+              
+              // Update creation state
+              setCreationState({
+                isActive: true,
+                projectId: projectId,
+                step: 'docker'
+              })
+              
+              // Step 4: Deploy to Docker
+              deployToDocker(projectId)
+              return
+            } else {
+              // Update progress based on time elapsed
+              const progress = Math.min(20 + (attempts * 1.5), 50) // Gradually increase from 20% to 50%
+              setCreationProgress(progress)
+              setCreationStatus(`Generating the code... (${attempts * 5}s elapsed)`)
+              
+              if (attempts < maxAttempts) {
+                setTimeout(checkProjectStatus, 5000) // Check again in 5 seconds
+              } else {
+                setCreationStatus("Error: AI generation timed out")
+                setIsCreatingProject(false)
+                setValidationError('AI generation timed out')
+              }
+            }
+          } else {
+            console.error('Failed to fetch project data')
+            if (attempts < maxAttempts) {
+              setTimeout(checkProjectStatus, 5000) // Retry in 5 seconds
+            } else {
+              setCreationStatus("Error: Failed to check project status")
+              setIsCreatingProject(false)
+              setValidationError('Failed to check project status')
+            }
+          }
+        } else {
+          console.error('Failed to verify project setup')
+          if (attempts < maxAttempts) {
+            setTimeout(checkProjectStatus, 5000) // Retry in 5 seconds
+          } else {
+            setCreationStatus("Error: Failed to verify project setup")
+            setIsCreatingProject(false)
+            setValidationError('Failed to verify project setup')
+          }
+        }
+      } catch (error) {
+        console.error('Error checking project AI generation status:', error)
+        if (attempts < maxAttempts) {
+          setTimeout(checkProjectStatus, 5000) // Retry in 5 seconds
+        } else {
+          setCreationStatus("Error: Failed to check project AI generation status")
+          setIsCreatingProject(false)
+          setValidationError('Failed to check project AI generation status')
+        }
+      }
+    }
+
+    // Start checking status
+    checkProjectStatus()
+  }
+
+  const deployToDocker = (projectId: number) => {
+    console.log('Deploying project to Docker:', projectId)
+    
+    // Use router.post with preserveState to deploy to Docker (no page reload)
+    router.post(`/api/projects/${projectId}/deploy`, {}, {
+      preserveState: true,
+      preserveScroll: true,
+      only: ['flash'],
+      onStart: () => {
+        console.log('Starting Docker deployment...')
+      },
+      onProgress: (progress) => {
+        console.log('Docker deployment progress:', progress)
+      },
+      onSuccess: (page) => {
+        console.log('Project deployed successfully:', page)
+        setCreationProgress(70)
+        setCreationStatus("Checking status...")
+        
+        // Update creation state
+        setCreationState({
+          isActive: true,
+          projectId: projectId,
+          step: 'start'
+        })
+        
+        // Step 5: Start container
+        startContainer(projectId)
+      },
+      onError: (errors) => {
+        console.error('Docker deployment failed:', errors)
+        setCreationStatus(`Error: ${Object.values(errors).join(', ')}`)
+        setIsCreatingProject(false)
+        setValidationError(Object.values(errors).join(', '))
+        // Clear creation state on failure
+        setCreationState(null)
+      }
+    })
+  }
+
+  const startContainer = (projectId: number) => {
+    console.log('Starting container for project:', projectId)
+    
+    // Use router.post with preserveState to start container (no page reload)
+    router.post(`/api/projects/${projectId}/docker/start`, {}, {
+      preserveState: true,
+      preserveScroll: true,
+      only: ['flash'],
+      onStart: () => {
+        console.log('Starting container...')
+      },
+      onProgress: (progress) => {
+        console.log('Container start progress:', progress)
+      },
+      onSuccess: (page) => {
+        console.log('Container started successfully:', page)
+        setCreationProgress(95)
+        setCreationStatus("Redirect to sandbox...")
+
+        // Update creation state to complete
+        setCreationState({
+          isActive: true,
+          projectId: projectId,
+          step: 'complete'
+        })
+
+        // Redirect to sandbox after a short delay
+        setTimeout(() => {
+          setCreationProgress(100)
+          setCreationStatus("Project created and deployed successfully!")
+          // Clear creation state on success
+          setCreationState(null)
+          window.location.href = `/projects/${projectId}/sandbox`
+        }, 1500)
+      },
+      onError: (errors) => {
+        console.error('Container start failed:', errors)
+        setCreationStatus(`Error: ${Object.values(errors).join(', ')}`)
+        setIsCreatingProject(false)
+        setValidationError(Object.values(errors).join(', '))
+        // Clear creation state on failure
+        setCreationState(null)
+      }
+    })
   }
 
   return (
@@ -818,14 +1539,236 @@ export default function VibecodeSandboxPage() {
         </div>
       </div>
 
-      {(showNewSandboxModal || showNewProjectModal) && (
+      {showNewSandboxModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700/60 shadow-2xl">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
               <span className="text-white font-medium text-lg">
-                Creating {showNewSandboxModal ? "sandbox" : "project"}...
+                Creating sandbox...
               </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNewProjectModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={(e) => {
+            // Only close if clicking the backdrop (not the modal content)
+            if (e.target === e.currentTarget) {
+              safeCloseModal()
+            }
+          }}
+        >
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-800/60 via-slate-900/60 to-slate-800/60 rounded-3xl p-10 border border-slate-700/50 backdrop-blur-sm shadow-2xl max-w-2xl w-full mx-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-orange-500/5"></div>
+            <div className="relative">
+              <button
+                onClick={safeCloseModal}
+                className="absolute top-4 right-4 w-8 h-8 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isCreatingProject && creationState?.isActive}
+              >
+                <X className="w-4 h-4 text-slate-300" />
+              </button>
+              
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl ${
+                isFromDeploy 
+                  ? 'bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/30' 
+                  : 'bg-gradient-to-br from-purple-400 to-pink-600 shadow-purple-500/30'
+              }`}>
+                {isFromDeploy ? (
+                  <Box className="w-10 h-10 text-white" />
+                ) : (
+                  <Plus className="w-10 h-10 text-white" />
+                )}
+              </div>
+              
+              {/* Warning message when modal is locked during creation */}
+              {isCreatingProject && creationState?.isActive && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4 text-yellow-400 text-sm text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Project creation in progress - Modal locked to prevent data loss</span>
+                  </div>
+                </div>
+              )}
+              
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent mb-4 text-center">
+                {isCreatingProject ? 'Creating Project...' : (isFromDeploy ? 'Deploy with AI' : 'Create New Project')}
+              </h3>
+              
+              {!isCreatingProject && isFromDeploy && (
+                <p className="text-slate-400 text-center mb-6">
+                  Ready to deploy <span className="text-orange-400 font-semibold">{selectedStack}</span> with <span className="text-orange-400 font-semibold">{selectedModel}</span>
+                </p>
+              )}
+              
+              {!isCreatingProject ? (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Project Name
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={projectName}
+                        onChange={(e) => setProjectName(e.target.value)}
+                        placeholder="Enter project name..."
+                        className={`w-full bg-slate-700/50 text-white placeholder-slate-400 border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 transition-all duration-200 pr-10 ${
+                          nameError 
+                            ? 'border-red-500/50 focus:ring-red-400/40 focus:border-red-400/40' 
+                            : 'border-slate-600/50 focus:ring-purple-400/40 focus:border-purple-400/40'
+                        }`}
+                      />
+                      {isCheckingName && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </div>
+                    {nameError && (
+                      <p className="text-red-400 text-sm mt-1">{nameError}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Description (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={projectDescription}
+                      onChange={(e) => setProjectDescription(e.target.value)}
+                      placeholder="Brief description of your project..."
+                      className="w-full bg-slate-700/50 text-white placeholder-slate-400 border border-slate-600/50 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-400/40 focus:border-purple-400/40 transition-all duration-200"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      AI Prompt
+                    </label>
+                    <textarea
+                      value={projectPrompt}
+                      onChange={(e) => setProjectPrompt(e.target.value)}
+                      placeholder="Describe what you want to build... (e.g., 'Create a modern e-commerce website with product catalog, shopping cart, and user authentication')"
+                      rows={4}
+                      className="w-full bg-slate-700/50 text-white placeholder-slate-400 border border-slate-600/50 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-400/40 focus:border-purple-400/40 transition-all duration-200 resize-none"
+                    />
+                  </div>
+                  
+                  <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                    <h4 className="text-sm font-semibold text-slate-300 mb-3">Selected Configuration</h4>
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+                        <span className="text-slate-300 font-medium">AI Model:</span>
+                        <span className="text-orange-400 font-semibold">{selectedModel || 'Claude Code'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+                        <span className="text-slate-300 font-medium">Stack:</span>
+                        <span className="text-blue-400 font-semibold">{selectedStack || 'Next.js'}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                      These selections were made from the main interface and will be used for your project.
+                    </p>
+                  </div>
+                  
+                  {validationError && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">
+                      {validationError}
+                    </div>
+                  )}
+
+                  {projectForm.errors && Object.keys(projectForm.errors).length > 0 && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">
+                      <div className="font-semibold mb-2">Form Validation Errors:</div>
+                      {Object.entries(projectForm.errors).map(([field, error]) => (
+                        <div key={field} className="text-sm">
+                          <strong>{field}:</strong> {Array.isArray(error) ? error.join(', ') : error}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={handleCreateProject}
+                    disabled={!projectName.trim() || !projectPrompt.trim() || isCreatingProject || !!nameError || isCheckingName}
+                    className="relative group bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border border-purple-400/20 overflow-hidden w-full"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <span className="relative flex items-center justify-center gap-3">
+                      {isCreatingProject ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-5 h-5" />
+                          {isFromDeploy ? 'Deploy Project with AI' : 'Create Project with AI'}
+                        </>
+                      )}
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <p className="text-lg text-slate-300 mb-4 font-medium">
+                      {creationStatus}
+                    </p>
+                    
+                    <div className="w-full bg-slate-700/50 rounded-full h-4 overflow-hidden mb-4">
+                      <div
+                        className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 h-4 rounded-full transition-all duration-300 shadow-lg shadow-purple-500/50"
+                        style={{ width: `${creationProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-slate-400 font-medium">{creationProgress}% complete</p>
+                  </div>
+                  
+                  {/* Cancel button */}
+                  <div className="flex justify-center mt-6">
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to cancel the project creation? This will stop the process and you\'ll need to start over.')) {
+                          setIsCreatingProject(false)
+                          setCreationProgress(0)
+                          setCreationStatus("")
+                          setCreatedProject(null)
+                          setCreationState(null)
+                          setValidationError("")
+                        }
+                      }}
+                      className="px-6 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 rounded-lg transition-colors duration-200"
+                    >
+                      Cancel Creation
+                    </button>
+                  </div>
+                  
+                  {createdProject && (
+                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-600 rounded-lg flex items-center justify-center">
+                          <span className="text-sm font-bold text-white">
+                            {createdProject.name?.charAt(0) || 'P'}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold">{createdProject.name}</p>
+                          <p className="text-slate-400 text-sm">Project created successfully</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
