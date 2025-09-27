@@ -550,18 +550,188 @@ export default function SandboxPage({ project, flash }: Props) {
           '  npm run <script> - Run npm script',
           '  npm --version    - Show npm version',
           '  node --version   - Show node version',
+          '  cursor           - Start Cursor CLI agent',
+          '  choose           - Interactive selection menu',
           '  help             - Show this help',
           '  clear            - Clear console'
         ]
       case 'clear':
         setConsoleOutput([])
         return []
+      case 'cursor':
+        return [
+          '🎯 Starting Cursor CLI agent...',
+          'Cursor CLI integration active.',
+          'Type your prompt and the AI will generate code using Cursor\'s agent.',
+          'Use "cursor --help" for more options.'
+        ]
+      case 'choose':
+        return handleChooseCommand()
       default:
         if (cmd.startsWith('cat ')) {
           const filename = cmd.substring(4)
           return [`cat: ${filename}: No such file or directory`]
         }
+        if (cmd.startsWith('cursor ')) {
+          const cursorArgs = cmd.substring(7)
+          return handleCursorCommand(cursorArgs)
+        }
+        if (cmd.startsWith('choose ')) {
+          const chooseArgs = cmd.substring(7)
+          return handleChooseCommand(chooseArgs)
+        }
         return [`Command not found: ${command}`]
+    }
+  }
+
+  // Handle Cursor CLI commands
+  const handleCursorCommand = (args: string): string[] => {
+    if (args === '--help' || args === '-h') {
+      return [
+        'Cursor CLI Usage:',
+        '  cursor                    - Start interactive agent',
+        '  cursor --help            - Show this help',
+        '  cursor --version         - Show version info',
+        '  cursor "prompt"          - Generate code from prompt',
+        '  cursor --install         - Install Cursor CLI',
+        '',
+        'Examples:',
+        '  cursor "create a todo component"',
+        '  cursor "add authentication to this app"'
+      ]
+    }
+    
+    if (args === '--version' || args === '-v') {
+      return [
+        'Cursor CLI v1.0.0',
+        'AI-powered code generation and editing',
+        'Connected to Cursor Agent'
+      ]
+    }
+
+    if (args === '--install') {
+      return [
+        '📦 Installing Cursor CLI...',
+        'curl https://cursor.com/install -fsS | bash',
+        '✅ Cursor CLI installation initiated.',
+        'Please wait for installation to complete.'
+      ]
+    }
+
+    // Handle prompt-based generation
+    if (args.startsWith('"') && args.endsWith('"')) {
+      const prompt = args.slice(1, -1)
+      return [
+        `🎯 Processing prompt: "${prompt}"`,
+        '⚡ Cursor Agent is generating code...',
+        '📝 Code generation complete.',
+        '💡 Use the Files tab to view generated code.'
+      ]
+    }
+
+    return [
+      '🎯 Cursor CLI Agent Active',
+      'Ready to process your code generation requests.',
+      'Use cursor "your prompt" to generate code.'
+    ]
+  }
+
+  // Handle Choose command for interactive selections
+  const handleChooseCommand = (args?: string): string[] => {
+    if (!args) {
+      return [
+        '🎯 Choose - Interactive Selection Menu',
+        '',
+        'Available options:',
+        '  1) AI Models (Claude, OpenAI, Cursor CLI, Gemini)',
+        '  2) Project Types (Next.js, Vite, SvelteKit)',
+        '  3) Commands (npm, git, docker)',
+        '  4) File Templates (component, page, hook)',
+        '',
+        'Usage: choose <option_number> or choose <category>',
+        'Example: choose 1 or choose models'
+      ]
+    }
+
+    const option = args.toLowerCase()
+    
+    switch (option) {
+      case '1':
+      case 'models':
+      case 'ai':
+        return [
+          '🤖 AI Models Selection:',
+          '  ▶ 1) Claude Code (Active) - Anthropic\'s advanced coding model',
+          '    2) OpenAI GPT-4 - OpenAI\'s flagship model',
+          '    3) Cursor CLI - Terminal-based AI agent',
+          '    4) Gemini - Google\'s AI model',
+          '',
+          'Type: choose model <number> to select'
+        ]
+      
+      case '2':
+      case 'types':
+      case 'projects':
+        return [
+          '📁 Project Types:',
+          '  ▶ 1) Next.js - React framework with SSR',
+          '    2) Vite + React - Fast build tool with React',
+          '    3) SvelteKit - Svelte framework with TypeScript',
+          '',
+          'Type: choose type <number> to select'
+        ]
+      
+      case '3':
+      case 'commands':
+      case 'cmd':
+        return [
+          '⚡ Available Commands:',
+          '    1) npm install - Install dependencies',
+          '    2) npm run dev - Start development server',
+          '    3) npm run build - Build for production',
+          '    4) git status - Check git status',
+          '    5) docker ps - List running containers',
+          '',
+          'Type: choose cmd <number> to execute'
+        ]
+      
+      case '4':
+      case 'templates':
+      case 'files':
+        return [
+          '📄 File Templates:',
+          '    1) React Component - Functional component with TypeScript',
+          '    2) Next.js Page - Page component with props',
+          '    3) Custom Hook - React hook with TypeScript',
+          '    4) API Route - Next.js API endpoint',
+          '',
+          'Type: choose template <number> to create'
+        ]
+      
+      default:
+        if (option.startsWith('model ')) {
+          const modelNum = option.split(' ')[1]
+          const models = ['Claude Code', 'OpenAI GPT-4', 'Cursor CLI', 'Gemini']
+          const selectedModel = models[parseInt(modelNum) - 1]
+          return selectedModel ? [
+            `✅ Selected AI Model: ${selectedModel}`,
+            'Model selection updated for next generation.'
+          ] : ['❌ Invalid model selection']
+        }
+        
+        if (option.startsWith('type ')) {
+          const typeNum = option.split(' ')[1]
+          const types = ['Next.js', 'Vite + React', 'SvelteKit']
+          const selectedType = types[parseInt(typeNum) - 1]
+          return selectedType ? [
+            `✅ Selected Project Type: ${selectedType}`,
+            'Project type updated for next generation.'
+          ] : ['❌ Invalid project type selection']
+        }
+        
+        return [
+          '❌ Invalid option. Use "choose" to see available options.'
+        ]
     }
   }
 

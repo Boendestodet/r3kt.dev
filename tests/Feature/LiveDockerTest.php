@@ -114,7 +114,7 @@ it('can stop the running container', function () {
 
     echo '🛑 Stopping container: '.$container->container_id.PHP_EOL;
 
-    $response = $this->post("/api/containers/{$container->id}/docker/stop");
+    $response = $this->post("/api/containers/{$container->id}/stop");
 
     $response->assertSuccessful();
 

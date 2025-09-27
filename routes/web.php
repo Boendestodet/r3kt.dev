@@ -17,13 +17,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route('projects.index');
     })->name('dashboard');
 
-    // Project routes
+    // Project routes (Core CRUD)
     Route::resource('projects', App\Http\Controllers\ProjectController::class);
     Route::post('projects/{project}/duplicate', [App\Http\Controllers\ProjectController::class, 'duplicate'])->name('projects.duplicate');
     Route::get('api/projects/check-name', [App\Http\Controllers\ProjectController::class, 'checkName'])->name('projects.check-name');
     Route::get('api/projects/{project}', [App\Http\Controllers\ProjectController::class, 'showApi'])->name('projects.show-api');
-    Route::get('api/projects/{project}/verify-setup', [App\Http\Controllers\ProjectController::class, 'verifySetup'])->name('projects.verify-setup');
-    Route::get('projects/{project}/sandbox', [App\Http\Controllers\ProjectController::class, 'sandbox'])->name('projects.sandbox');
+
+    // Project Sandbox routes
+    Route::get('projects/{project}/sandbox', [App\Http\Controllers\ProjectSandboxController::class, 'show'])->name('projects.sandbox');
+
+    // Project Verification routes
+    Route::get('api/projects/{project}/verify-setup', [App\Http\Controllers\ProjectVerificationController::class, 'verify'])->name('projects.verify-setup');
 
     // Prompt routes
     Route::post('projects/{project}/prompts', [App\Http\Controllers\PromptController::class, 'store'])->name('prompts.store');
@@ -46,30 +50,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('comments/{comment}', [App\Http\Controllers\CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('comments/{comment}/toggle-resolved', [App\Http\Controllers\CommentController::class, 'toggleResolved'])->name('comments.toggle-resolved');
 
-    // Docker management routes (consolidated)
+    // Docker System Management routes
     Route::prefix('api/docker')->name('docker.')->group(function () {
-        Route::get('info', [App\Http\Controllers\DockerController::class, 'info'])->name('info');
-        Route::get('containers', [App\Http\Controllers\DockerController::class, 'getRunningContainers'])->name('containers');
-        Route::post('cleanup', [App\Http\Controllers\DockerController::class, 'cleanup'])->name('cleanup');
+        Route::get('info', [App\Http\Controllers\DockerSystemController::class, 'info'])->name('info');
+        Route::get('containers', [App\Http\Controllers\DockerSystemController::class, 'getRunningContainers'])->name('containers');
+        Route::post('cleanup', [App\Http\Controllers\DockerSystemController::class, 'cleanup'])->name('cleanup');
     });
 
-    // Project Docker operations
+    // Project Deployment routes
     Route::prefix('api/projects/{project}')->name('projects.')->group(function () {
-        Route::post('deploy', [App\Http\Controllers\DockerController::class, 'deploy'])->name('deploy');
-        Route::post('docker/start', [App\Http\Controllers\DockerController::class, 'startContainer'])->name('docker.start');
-        Route::get('docker/preview', [App\Http\Controllers\DockerController::class, 'getPreviewUrl'])->name('docker.preview');
-        Route::get('docker/status', [App\Http\Controllers\DockerController::class, 'getContainerStatus'])->name('docker.status');
-        Route::get('docker/logs', [App\Http\Controllers\DockerController::class, 'getContainerLogs'])->name('docker.logs');
-        Route::post('docker/stop', [App\Http\Controllers\DockerController::class, 'stopContainer'])->name('docker.stop');
-        Route::post('docker/restart', [App\Http\Controllers\DockerController::class, 'restartContainer'])->name('docker.restart');
+        Route::post('deploy', [App\Http\Controllers\ProjectDeploymentController::class, 'deploy'])->name('deploy');
+        Route::get('docker/preview', [App\Http\Controllers\ProjectDeploymentController::class, 'getPreviewUrl'])->name('docker.preview');
     });
 
-    // Container Docker operations (for direct container access - when you have container ID)
+    // Container Management routes
+    Route::prefix('api/projects/{project}')->name('projects.')->group(function () {
+        Route::post('docker/start', [App\Http\Controllers\ContainerController::class, 'start'])->name('docker.start');
+        Route::get('docker/status', [App\Http\Controllers\ContainerController::class, 'status'])->name('docker.status');
+        Route::get('docker/logs', [App\Http\Controllers\ContainerController::class, 'logs'])->name('docker.logs');
+        Route::post('docker/stop', [App\Http\Controllers\ContainerController::class, 'stop'])->name('docker.stop');
+        Route::post('docker/restart', [App\Http\Controllers\ContainerController::class, 'restart'])->name('docker.restart');
+    });
+
+    // Direct Container Management routes (for direct container access - when you have container ID)
     Route::prefix('api/containers/{container}')->name('containers.')->group(function () {
-        Route::post('stop', [App\Http\Controllers\DockerController::class, 'stopContainer'])->name('stop');
-        Route::post('restart', [App\Http\Controllers\DockerController::class, 'restartContainer'])->name('restart');
-        Route::get('status', [App\Http\Controllers\DockerController::class, 'getContainerStatus'])->name('status');
-        Route::get('logs', [App\Http\Controllers\DockerController::class, 'getContainerLogs'])->name('logs');
+        Route::post('stop', [App\Http\Controllers\ContainerController::class, 'stop'])->name('stop');
+        Route::post('restart', [App\Http\Controllers\ContainerController::class, 'restart'])->name('restart');
+        Route::get('status', [App\Http\Controllers\ContainerController::class, 'status'])->name('status');
+        Route::get('logs', [App\Http\Controllers\ContainerController::class, 'logs'])->name('logs');
     });
 
     // Subdomain management routes

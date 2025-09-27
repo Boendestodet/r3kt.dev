@@ -25,7 +25,10 @@ it('can complete the full workflow: create project -> generate AI -> start conta
     $response = $this->post('/projects', [
         'name' => 'My Test Website',
         'description' => 'A test website for workflow testing',
-        'type' => 'portfolio',
+        'settings' => [
+            'stack' => 'nextjs',
+            'ai_model' => 'Claude Code',
+        ],
     ]);
 
     if ($response->status() === 302) {
@@ -152,7 +155,10 @@ it('can create project with auto-start container enabled', function () {
     $response = $this->post('/projects', [
         'name' => 'Auto-Start Test Project',
         'description' => 'Testing auto-start container feature',
-        'type' => 'landing',
+        'settings' => [
+            'stack' => 'nextjs',
+            'ai_model' => 'Claude Code',
+        ],
     ]);
 
     if ($response->status() === 302) {
@@ -203,4 +209,93 @@ it('can create project with auto-start container enabled', function () {
 
     echo '✅ Auto-start prompt verified in database'.PHP_EOL;
     echo '🎉 Auto-start workflow test passed!'.PHP_EOL;
+});
+
+it('can complete workflow with different stack types', function () {
+    echo '🚀 Testing workflow with different stack types...'.PHP_EOL;
+
+    $stackTypes = [
+        'nextjs' => 'Next.js',
+        'vite-react' => 'Vite + React',
+        'vite-vue' => 'Vite + Vue',
+        'sveltekit' => 'SvelteKit',
+    ];
+
+    foreach ($stackTypes as $stackKey => $stackName) {
+        echo "📝 Testing {$stackName} workflow...".PHP_EOL;
+
+        // Create project with specific stack
+        $response = $this->post('/projects', [
+            'name' => "Test {$stackName} Website",
+            'description' => "A test website using {$stackName}",
+            'settings' => [
+                'stack' => $stackKey,
+                'ai_model' => 'Claude Code',
+            ],
+        ]);
+
+        $project = Project::where('name', "Test {$stackName} Website")->first();
+        if (! $project) {
+            echo "❌ Project not found for {$stackName}".PHP_EOL;
+
+            continue;
+        }
+
+        expect($project->settings['stack'])->toBe($stackKey);
+        echo "✅ {$stackName} project created".PHP_EOL;
+
+        // Simulate AI generation with stack-specific code
+        $generatedCode = match ($stackKey) {
+            'nextjs' => [
+                'package.json' => '{"name": "nextjs-test", "scripts": {"dev": "next dev"}}',
+                'app/page.tsx' => '<div>Next.js Page</div>',
+            ],
+            'vite-react' => [
+                'package.json' => '{"name": "vite-react-test", "scripts": {"dev": "vite"}}',
+                'src/App.tsx' => '<div>Vite React App</div>',
+            ],
+            'vite-vue' => [
+                'package.json' => '{"name": "vite-vue-test", "scripts": {"dev": "vite"}}',
+                'src/App.vue' => '<template><div>Vite Vue App</div></template>',
+            ],
+            'sveltekit' => [
+                'package.json' => '{"name": "sveltekit-test", "scripts": {"dev": "vite dev"}}',
+                'src/routes/+page.svelte' => '<div>SvelteKit Page</div>',
+            ],
+        };
+
+        $project->update([
+            'generated_code' => json_encode($generatedCode),
+            'status' => 'ready',
+        ]);
+
+        echo "✅ {$stackName} AI content generated".PHP_EOL;
+
+        // Test Docker container creation (skip if Docker not available)
+        if (! app(\App\Services\DockerService::class)->isDockerAvailable()) {
+            echo "⚠️ Docker not available - skipping container test for {$stackName}".PHP_EOL;
+
+            continue;
+        }
+
+        $response = $this->post("/api/projects/{$project->id}/docker/start");
+
+        if ($response->status() === 503) {
+            echo "⚠️ Docker service unavailable for {$stackName}".PHP_EOL;
+
+            continue;
+        }
+
+        $response->assertSuccessful();
+        echo "✅ {$stackName} container started successfully".PHP_EOL;
+
+        // Clean up
+        $container = $project->containers()->latest()->first();
+        if ($container) {
+            $this->post("/api/containers/{$container->id}/docker/stop");
+            echo "✅ {$stackName} container stopped".PHP_EOL;
+        }
+    }
+
+    echo '🎉 Multi-stack workflow test completed!'.PHP_EOL;
 });

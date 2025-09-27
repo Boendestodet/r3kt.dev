@@ -12,6 +12,8 @@ class AIWebsiteGenerator
         private CollaborationService $collaborationService,
         private OpenAIService $openAIService,
         private ClaudeAIService $claudeAIService,
+        private GeminiAIService $geminiAIService,
+        private CursorAIService $cursorAIService,
         private DockerService $dockerService
     ) {
         //
@@ -25,8 +27,9 @@ class AIWebsiteGenerator
         $prompt->update(['status' => 'processing']);
 
         try {
-            // Try AI providers in order of preference
-            $providers = $this->getAvailableProviders();
+            // Get user's preferred model from project settings
+            $preferredModel = $this->getPreferredModel($prompt->project);
+            $providers = $this->getAvailableProviders($preferredModel);
 
             if (empty($providers)) {
                 Log::warning('No AI providers configured, falling back to mock generation');
@@ -36,11 +39,12 @@ class AIWebsiteGenerator
             }
 
             $lastException = null;
+            $modelMapping = $this->getModelServiceMapping();
 
             foreach ($providers as $provider) {
                 try {
                     Log::info("Attempting to generate website with {$provider['name']}");
-                    
+
                     // Determine project type from project settings
                     $projectType = $this->getProjectType($prompt->project);
                     $result = $provider['service']->generateWebsite($prompt->prompt, $projectType);
@@ -84,6 +88,17 @@ class AIWebsiteGenerator
                     Log::warning("Failed to generate with {$provider['name']}: ".$e->getMessage());
                     $lastException = $e;
 
+                    // If this was the user's preferred model, don't try others
+                    if ($preferredModel && $provider['name'] === $modelMapping[$preferredModel]) {
+                        Log::error("User's preferred model '{$preferredModel}' failed, stopping generation");
+                        $prompt->update([
+                            'status' => 'failed',
+                            'response' => json_encode(['error' => "Your selected AI model '{$preferredModel}' failed to generate the website. Please try again or select a different model."]),
+                            'processed_at' => now(),
+                        ]);
+                        return;
+                    }
+
                     continue;
                 }
             }
@@ -108,50 +123,185 @@ class AIWebsiteGenerator
     private function getProjectType(Project $project): string
     {
         $settings = $project->settings ?? [];
-        $stack = $settings['stack'] ?? '';
-        
-        // Map stack names to project types
-        switch ($stack) {
-            case 'vite':
-            case 'Vite + React':
-                return 'vite';
-            case 'nextjs':
-            case 'Next.js':
-                return 'nextjs';
-            default:
-                // Default to Next.js for backward compatibility
-                return 'nextjs';
+        $stack = strtolower(trim($settings['stack'] ?? ''));
+
+        Log::info('Determining project type', [
+            'project_id' => $project->id,
+            'stack' => $stack,
+            'stack_type' => gettype($stack),
+            'stack_length' => strlen($stack),
+            'settings' => $settings,
+        ]);
+
+        // Normalize and map stack names with flexible matching
+        // Order matters - more specific patterns first
+        $stackMappings = [
+            'vite-vue' => ['vite + vue', 'vite + vue + typescript', 'vite vue'],
+            'vite-react' => ['vite + react', 'vite + react + typescript', 'vite'],
+            'nextjs' => ['next.js', 'nextjs + react', 'nextjs', 'next'],
+            'sveltekit' => ['svelte + kit', 'sveltekit', 'svelte'],
+        ];
+
+        // Check for partial matches
+        foreach ($stackMappings as $type => $patterns) {
+            foreach ($patterns as $pattern) {
+                if (str_contains($stack, $pattern)) {
+                    Log::info("Detected {$type} project type from stack: {$stack}");
+
+                    return $type;
+                }
+            }
         }
+
+        // Log unknown stack and default to Next.js for backward compatibility
+        Log::warning("Unknown stack type: '{$stack}', defaulting to nextjs", [
+            'project_id' => $project->id,
+            'stack' => $stack,
+            'settings' => $settings,
+        ]);
+
+        return 'nextjs';
     }
 
     /**
-     * Get available AI providers in order of preference
+     * Get user's preferred model from project settings
      */
-    private function getAvailableProviders(): array
+    private function getPreferredModel(Project $project): ?string
+    {
+        $settings = $project->settings ?? [];
+        $preferredModel = $settings['ai_model'] ?? null;
+        
+        Log::info('User preferred model', [
+            'project_id' => $project->id,
+            'preferred_model' => $preferredModel,
+            'settings' => $settings,
+        ]);
+        
+        return $preferredModel;
+    }
+
+    /**
+     * Map UI model names to service names
+     */
+    private function getModelServiceMapping(): array
+    {
+        return [
+            'Claude Code' => 'claude',
+            'Codex (GPT-5)' => 'openai',
+            'Gemini CLI' => 'gemini',
+            'Cursor CLI' => 'cursor-cli',
+        ];
+    }
+
+    /**
+     * Get available AI providers, prioritizing user's preferred model
+     */
+    private function getAvailableProviders(?string $preferredModel = null): array
     {
         $providers = [];
+        $modelMapping = $this->getModelServiceMapping();
+        
+        // If user has a preferred model, ONLY use that model (no fallback)
+        if ($preferredModel && isset($modelMapping[$preferredModel])) {
+            $preferredService = $modelMapping[$preferredModel];
+            $preferredProvider = $this->getProviderByName($preferredService);
+            
+            if ($preferredProvider) {
+                $providers[] = $preferredProvider;
+                Log::info("Using ONLY user's preferred model: {$preferredModel} -> {$preferredService} (no fallback)");
+                return $providers; // Return only the preferred provider
+            } else {
+                Log::warning("User's preferred model '{$preferredModel}' is not configured, will use fallback");
+            }
+        }
 
-        // Add Claude AI as first preference (if configured)
-        if ($this->claudeAIService->isConfigured()) {
-            $providers[] = [
+        // Fallback to all available providers only if no preferred model is set
+        $allProviders = [
+            'claude' => [
                 'name' => 'claude',
                 'service' => $this->claudeAIService,
                 'temperature' => config('services.claude.temperature', 0.7),
                 'max_tokens' => config('services.claude.max_tokens', 4000),
-            ];
-        }
-
-        // Add OpenAI as second preference (if configured)
-        if ($this->openAIService->isConfigured()) {
-            $providers[] = [
+            ],
+            'openai' => [
                 'name' => 'openai',
                 'service' => $this->openAIService,
                 'temperature' => config('services.openai.temperature', 0.7),
                 'max_tokens' => config('services.openai.max_tokens', 4000),
-            ];
+            ],
+            'gemini' => [
+                'name' => 'gemini',
+                'service' => $this->geminiAIService,
+                'temperature' => config('services.gemini.temperature', 0.7),
+                'max_tokens' => config('services.gemini.max_tokens', 4000),
+            ],
+            'cursor-cli' => [
+                'name' => 'cursor-cli',
+                'service' => $this->cursorAIService,
+                'temperature' => 0.7,
+                'max_tokens' => 4000,
+            ],
+        ];
+
+        // Add all configured providers for fallback
+        foreach ($allProviders as $serviceName => $provider) {
+            if ($provider['service']->isConfigured()) {
+                $providers[] = $provider;
+            }
         }
 
         return $providers;
+    }
+
+    /**
+     * Get provider by service name
+     */
+    private function getProviderByName(string $serviceName): ?array
+    {
+        switch ($serviceName) {
+            case 'claude':
+                if ($this->claudeAIService->isConfigured()) {
+                    return [
+                        'name' => 'claude',
+                        'service' => $this->claudeAIService,
+                        'temperature' => config('services.claude.temperature', 0.7),
+                        'max_tokens' => config('services.claude.max_tokens', 4000),
+                    ];
+                }
+                break;
+            case 'openai':
+                if ($this->openAIService->isConfigured()) {
+                    return [
+                        'name' => 'openai',
+                        'service' => $this->openAIService,
+                        'temperature' => config('services.openai.temperature', 0.7),
+                        'max_tokens' => config('services.openai.max_tokens', 4000),
+                    ];
+                }
+                break;
+            case 'gemini':
+                if ($this->geminiAIService->isConfigured()) {
+                    return [
+                        'name' => 'gemini',
+                        'service' => $this->geminiAIService,
+                        'temperature' => config('services.gemini.temperature', 0.7),
+                        'max_tokens' => config('services.gemini.max_tokens', 4000),
+                    ];
+                }
+                break;
+            case 'cursor-cli':
+                if ($this->cursorAIService->isConfigured()) {
+                    return [
+                        'name' => 'cursor-cli',
+                        'service' => $this->cursorAIService,
+                        'temperature' => 0.7,
+                        'max_tokens' => 4000,
+                    ];
+                }
+                break;
+        }
+        
+        return null;
     }
 
     /**
@@ -216,7 +366,13 @@ class AIWebsiteGenerator
         // Analyze the prompt to determine the type of website
         $websiteType = $this->analyzePrompt($prompt);
 
-        if ($projectType === 'vite') {
+        Log::info('Generating mock website', [
+            'project_type' => $projectType,
+            'website_type' => $websiteType,
+            'prompt' => $prompt,
+        ]);
+
+        if ($projectType === 'vite-react') {
             switch ($websiteType) {
                 case 'portfolio':
                     return $this->generateVitePortfolio($prompt);
@@ -231,8 +387,22 @@ class AIWebsiteGenerator
                 default:
                     return $this->generateViteGeneric($prompt);
             }
-        } else {
-            // Default to Next.js
+        } elseif ($projectType === 'sveltekit') {
+            switch ($websiteType) {
+                case 'portfolio':
+                    return $this->generateSvelteKitPortfolio($prompt);
+                case 'ecommerce':
+                    return $this->generateSvelteKitEcommerce($prompt);
+                case 'blog':
+                    return $this->generateSvelteKitBlog($prompt);
+                case 'landing':
+                    return $this->generateSvelteKitLanding($prompt);
+                case 'dashboard':
+                    return $this->generateSvelteKitDashboard($prompt);
+                default:
+                    return $this->generateSvelteKitGeneric($prompt);
+            }
+        } elseif ($projectType === 'nextjs') {
             switch ($websiteType) {
                 case 'portfolio':
                     return $this->generateNextJSPortfolio($prompt);
@@ -247,6 +417,11 @@ class AIWebsiteGenerator
                 default:
                     return $this->generateNextJSGeneric($prompt);
             }
+        } else {
+            // Unknown project type - log error and default to Next.js
+            Log::error("Unknown project type in mock generation: {$projectType}, defaulting to Next.js");
+
+            return $this->generateNextJSGeneric($prompt);
         }
     }
 
@@ -1288,5 +1463,143 @@ code {
     private function generateViteDashboard(string $prompt): array
     {
         return $this->generateViteGeneric($prompt);
+    }
+
+    // SvelteKit Mock Generation Methods
+    private function generateSvelteKitPortfolio(string $prompt): array
+    {
+        return $this->generateSvelteKitGeneric($prompt);
+    }
+
+    private function generateSvelteKitEcommerce(string $prompt): array
+    {
+        return $this->generateSvelteKitGeneric($prompt);
+    }
+
+    private function generateSvelteKitBlog(string $prompt): array
+    {
+        return $this->generateSvelteKitGeneric($prompt);
+    }
+
+    private function generateSvelteKitLanding(string $prompt): array
+    {
+        return $this->generateSvelteKitGeneric($prompt);
+    }
+
+    private function generateSvelteKitDashboard(string $prompt): array
+    {
+        return $this->generateSvelteKitGeneric($prompt);
+    }
+
+    private function generateSvelteKitGeneric(string $prompt): array
+    {
+        return [
+            'src/app.html' => <<<'EOT'
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
+EOT,
+            'src/app.css' => <<<'EOT'
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+	font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
+	color-scheme: light dark;
+	color: rgba(255, 255, 255, 0.87);
+	background-color: #242424;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	-webkit-text-size-adjust: 100%;
+}
+
+a {
+	font-weight: 500;
+	color: #646cff;
+	text-decoration: inherit;
+}
+a:hover {
+	color: #535bf2;
+}
+
+body {
+	margin: 0;
+	display: flex;
+	place-items: center;
+	min-width: 320px;
+	min-height: 100vh;
+}
+
+h1 {
+	font-size: 3.2em;
+	line-height: 1.1;
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		color: #213547;
+		background-color: #ffffff;
+	}
+	a:hover {
+		color: #747bff;
+	}
+	button {
+		background-color: #f9f9f9;
+	}
+}
+EOT,
+            'src/routes/+layout.svelte' => <<<'EOT'
+<script>
+	import '../app.css';
+</script>
+
+<slot />
+EOT,
+            'src/routes/+page.svelte' => <<<'EOT'
+<script lang="ts">
+	let count = 0;
+</script>
+
+<svelte:head>
+	<title>AI Generated SvelteKit Project</title>
+</svelte:head>
+
+<main class="max-w-4xl mx-auto p-8 text-center">
+	<div class="card p-8">
+		<h1 class="text-4xl font-bold mb-4">Welcome to Your SvelteKit Project</h1>
+		<p class="mb-6">This project is ready for AI code generation!</p>
+		<button 
+			class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+			on:click={() => count++}
+		>
+			count is {count}
+		</button>
+		<p class="mt-4">
+			Edit <code class="bg-gray-800 px-2 py-1 rounded">src/routes/+page.svelte</code> and save to test HMR
+		</p>
+	</div>
+</main>
+
+<style>
+	.card {
+		padding: 2em;
+	}
+</style>
+EOT,
+        ];
     }
 }

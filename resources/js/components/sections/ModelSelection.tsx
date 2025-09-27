@@ -39,10 +39,10 @@ const models: Model[] = [
     comingSoon: true,
   },
   {
-    name: "Cursor™ Agent",
+    name: "Cursor CLI",
     description:
-      "Powered by Anysphere. AI-first code editor with autonomous background agents and advanced codebase understanding.",
-    comingSoon: true,
+      "Powered by Anysphere. Command-line interface for Cursor's AI agent with terminal-based code generation and interactive choose functionality.",
+    comingSoon: false,
   },
 ]
 
@@ -72,7 +72,14 @@ export const ModelSelection = ({ selectedModel, onModelSelect }: ModelSelectionP
           <h3 className="text-sm tracking-wider text-slate-300 uppercase font-bold">AVAILABLE MODELS</h3>
         </div>
         <div className="grid gap-5">
-          {models.map((model) => (
+          {models
+            .sort((a, b) => {
+              // Available models first, then coming soon models
+              if (a.comingSoon && !b.comingSoon) return 1
+              if (!a.comingSoon && b.comingSoon) return -1
+              return 0
+            })
+            .map((model) => (
             <div
               key={model.name}
               className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer ${

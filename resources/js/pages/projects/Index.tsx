@@ -80,7 +80,7 @@ export default function VibecodeSandboxPage({ projects }: Props) {
     description: '',
     settings: {
       ai_model: 'gpt-4',
-      stack: 'nextjs',
+      stack: 'nextjs', // Default to nextjs, will be updated when stack is selected
       auto_deploy: true
     }
   })
@@ -211,6 +211,20 @@ export default function VibecodeSandboxPage({ projects }: Props) {
     setCreationState(null)
     return true
   }
+
+  // Update form when stack is selected
+  useEffect(() => {
+    if (selectedStack) {
+      projectForm.setData('settings.stack', selectedStack)
+    }
+  }, [selectedStack])
+
+  // Update form when model is selected
+  useEffect(() => {
+    if (selectedModel) {
+      projectForm.setData('settings.ai_model', selectedModel)
+    }
+  }, [selectedModel])
 
   // Debounced project name checking
   useEffect(() => {

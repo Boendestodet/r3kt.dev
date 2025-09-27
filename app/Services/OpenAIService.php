@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use OpenAI;
 use Illuminate\Support\Facades\Log;
+use OpenAI;
 
 class OpenAIService
 {
-    public function __construct()
-    {
+    public function __construct(
+        private StackControllerFactory $stackFactory
+    ) {
         //
     }
 
@@ -18,8 +19,9 @@ class OpenAIService
     public function generateWebsite(string $prompt, string $projectType = 'nextjs'): array
     {
         try {
-            $systemPrompt = $this->buildSystemPrompt($projectType);
-            $userPrompt = $this->buildUserPrompt($prompt, $projectType);
+            $stackController = $this->stackFactory->getControllerByType($projectType);
+            $systemPrompt = $stackController->getSystemPrompt();
+            $userPrompt = $stackController->getUserPrompt($prompt);
 
             $client = \OpenAI::client(config('services.openai.api_key'));
             $response = $client->chat()->create([
@@ -27,12 +29,12 @@ class OpenAIService
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => $systemPrompt
+                        'content' => $systemPrompt,
                     ],
                     [
                         'role' => 'user',
-                        'content' => $userPrompt
-                    ]
+                        'content' => $userPrompt,
+                    ],
                 ],
                 'max_tokens' => (int) config('services.openai.max_tokens'),
                 'temperature' => (float) config('services.openai.temperature'),
@@ -45,7 +47,7 @@ class OpenAIService
             $projectData = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('Invalid JSON response from OpenAI: ' . json_last_error_msg());
+                throw new \Exception('Invalid JSON response from OpenAI: '.json_last_error_msg());
             }
 
             return [
@@ -55,37 +57,13 @@ class OpenAIService
             ];
 
         } catch (\Exception $e) {
-            Log::error('OpenAI API Error: ' . $e->getMessage(), [
+            Log::error('OpenAI API Error: '.$e->getMessage(), [
                 'prompt' => $prompt,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            throw new \Exception('Failed to generate website: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Build the system prompt for website generation
-     */
-    private function buildSystemPrompt(string $projectType = 'nextjs'): string
-    {
-        if ($projectType === 'vite') {
-            return "You are a web developer. Generate a Vite + React + TypeScript project as JSON with these exact keys where each value is a STRING (not an object): index.html, src/main.tsx, src/App.tsx, src/App.css, src/index.css. Each value must be a complete file content as a string. DO NOT include configuration files like package.json, vite.config.ts, tsconfig.json, etc. - these are handled by the system. Focus only on the application code and UI components. Return only valid JSON, no other text.";
-        } else {
-            return "You are a web developer. Generate a Next.js project as JSON with these exact keys where each value is a STRING (not an object): app/layout.tsx, app/page.tsx, app/globals.css. Each value must be a complete file content as a string. DO NOT include configuration files like package.json, next.config.js, tsconfig.json, etc. - these are handled by the system. Focus only on the application code and UI components. Return only valid JSON, no other text.";
-        }
-    }
-
-    /**
-     * Build the user prompt with context
-     */
-    private function buildUserPrompt(string $prompt, string $projectType = 'nextjs'): string
-    {
-        if ($projectType === 'vite') {
-            return "Create a Vite + React + TypeScript website for: {$prompt}";
-        } else {
-            return "Create a Next.js website for: {$prompt}";
+            throw new \Exception('Failed to generate website: '.$e->getMessage());
         }
     }
 
@@ -94,7 +72,7 @@ class OpenAIService
      */
     public function isConfigured(): bool
     {
-        return !empty(config('services.openai.api_key'));
+        return ! empty(config('services.openai.api_key'));
     }
 
     /**

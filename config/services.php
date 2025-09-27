@@ -48,11 +48,18 @@ return [
         'temperature' => env('OPENAI_TEMPERATURE', 0.7),
     ],
 
-        'claude' => [
-            'api_key' => env('CLAUDE_API_KEY'),
-            'model' => env('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022'),
-            'max_tokens' => env('CLAUDE_MAX_TOKENS', 4000),
-            'temperature' => env('CLAUDE_TEMPERATURE', 0.7),
-        ],
+    'claude' => [
+        'api_key' => env('CLAUDE_API_KEY'),
+        'model' => env('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022'),
+        'max_tokens' => env('CLAUDE_MAX_TOKENS', 4000),
+        'temperature' => env('CLAUDE_TEMPERATURE', 0.7),
+    ],
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-1.5-pro'),
+        'max_tokens' => env('GEMINI_MAX_TOKENS', 4000),
+        'temperature' => env('GEMINI_TEMPERATURE', 0.7),
+    ],
 
 ];

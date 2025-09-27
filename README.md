@@ -67,7 +67,8 @@ Docker Containers (Next.js Dev Server)
 - MySQL 8.0+
 - Docker (for live previews)
 - OpenAI API key
-- Claude AI API key
+- Claude AI API key  
+- Google Gemini API key
 
 ### Installation
 
@@ -128,6 +129,12 @@ CLAUDE_API_KEY=your_claude_api_key_here
 CLAUDE_MODEL=claude-3-5-sonnet-20241022
 CLAUDE_MAX_TOKENS=4000
 CLAUDE_TEMPERATURE=0.7
+
+# Google Gemini Configuration
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-1.5-pro
+GEMINI_MAX_TOKENS=4000
+GEMINI_TEMPERATURE=0.7
 ```
 
 ### Database Configuration
@@ -183,16 +190,17 @@ php artisan test --coverage
 ### How It Works
 
 1. **User Input**: User describes their website in natural language
-2. **AI Processing**: System tries Claude AI first (cheaper), then OpenAI
+2. **AI Processing**: System tries Claude AI first (cheapest), then OpenAI, then Gemini
 3. **Code Generation**: AI generates complete Next.js project structure
 4. **Project Creation**: Files are stored and project is marked as ready
-5. **Fallback**: If both AI providers fail, mock generation ensures system works
+5. **Fallback**: If all AI providers fail, mock generation ensures system works
 
 ### Cost Optimization
 
-- **Claude 3.5 Sonnet**: ~$0.003 per 1K input tokens, ~$0.015 per 1K output tokens
-- **OpenAI GPT-4**: ~$0.03 per 1K input tokens, ~$0.06 per 1K output tokens
-- **Claude is 3.7x cheaper** for output tokens, so it's tried first
+- **Google Gemini 1.5 Pro**: ~$0.00125 per 1K input tokens, ~$0.005 per 1K output tokens (cheapest)
+- **Claude 3.5 Sonnet**: ~$0.003 per 1K input tokens, ~$0.015 per 1K output tokens  
+- **OpenAI GPT-4**: ~$0.03 per 1K input tokens, ~$0.06 per 1K output tokens (most expensive)
+- **Smart fallback order**: Claude → OpenAI → Gemini → Mock generation
 
 ## 🚀 Usage
 

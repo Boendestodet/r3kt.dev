@@ -1,87 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
-* @see \App\Http\Controllers\DockerController::start
-* @see app/Http/Controllers/DockerController.php:50
-* @route '/api/projects/{project}/docker/start'
-*/
-export const start = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
-    url: start.url(args, options),
-    method: 'post',
-})
-
-start.definition = {
-    methods: ["post"],
-    url: '/api/projects/{project}/docker/start',
-} satisfies RouteDefinition<["post"]>
-
-/**
-* @see \App\Http\Controllers\DockerController::start
-* @see app/Http/Controllers/DockerController.php:50
-* @route '/api/projects/{project}/docker/start'
-*/
-start.url = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
-    if (typeof args === 'string' || typeof args === 'number') {
-        args = { project: args }
-    }
-
-    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
-        args = { project: args.id }
-    }
-
-    if (Array.isArray(args)) {
-        args = {
-            project: args[0],
-        }
-    }
-
-    args = applyUrlDefaults(args)
-
-    const parsedArgs = {
-        project: typeof args.project === 'object'
-        ? args.project.id
-        : args.project,
-    }
-
-    return start.definition.url
-            .replace('{project}', parsedArgs.project.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
-
-/**
-* @see \App\Http\Controllers\DockerController::start
-* @see app/Http/Controllers/DockerController.php:50
-* @route '/api/projects/{project}/docker/start'
-*/
-start.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
-    url: start.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\DockerController::start
-* @see app/Http/Controllers/DockerController.php:50
-* @route '/api/projects/{project}/docker/start'
-*/
-const startForm = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: start.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\DockerController::start
-* @see app/Http/Controllers/DockerController.php:50
-* @route '/api/projects/{project}/docker/start'
-*/
-startForm.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: start.url(args, options),
-    method: 'post',
-})
-
-start.form = startForm
-
-/**
-* @see \App\Http\Controllers\DockerController::preview
-* @see app/Http/Controllers/DockerController.php:440
+* @see \App\Http\Controllers\ProjectDeploymentController::preview
+* @see app/Http/Controllers/ProjectDeploymentController.php:93
 * @route '/api/projects/{project}/docker/preview'
 */
 export const preview = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -95,8 +15,8 @@ preview.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see \App\Http\Controllers\DockerController::preview
-* @see app/Http/Controllers/DockerController.php:440
+* @see \App\Http\Controllers\ProjectDeploymentController::preview
+* @see app/Http/Controllers/ProjectDeploymentController.php:93
 * @route '/api/projects/{project}/docker/preview'
 */
 preview.url = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -128,8 +48,8 @@ preview.url = (args: { project: number | { id: number } } | [project: number | {
 }
 
 /**
-* @see \App\Http\Controllers\DockerController::preview
-* @see app/Http/Controllers/DockerController.php:440
+* @see \App\Http\Controllers\ProjectDeploymentController::preview
+* @see app/Http/Controllers/ProjectDeploymentController.php:93
 * @route '/api/projects/{project}/docker/preview'
 */
 preview.get = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -138,8 +58,8 @@ preview.get = (args: { project: number | { id: number } } | [project: number | {
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::preview
-* @see app/Http/Controllers/DockerController.php:440
+* @see \App\Http\Controllers\ProjectDeploymentController::preview
+* @see app/Http/Controllers/ProjectDeploymentController.php:93
 * @route '/api/projects/{project}/docker/preview'
 */
 preview.head = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -148,8 +68,8 @@ preview.head = (args: { project: number | { id: number } } | [project: number | 
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::preview
-* @see app/Http/Controllers/DockerController.php:440
+* @see \App\Http\Controllers\ProjectDeploymentController::preview
+* @see app/Http/Controllers/ProjectDeploymentController.php:93
 * @route '/api/projects/{project}/docker/preview'
 */
 const previewForm = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -158,8 +78,8 @@ const previewForm = (args: { project: number | { id: number } } | [project: numb
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::preview
-* @see app/Http/Controllers/DockerController.php:440
+* @see \App\Http\Controllers\ProjectDeploymentController::preview
+* @see app/Http/Controllers/ProjectDeploymentController.php:93
 * @route '/api/projects/{project}/docker/preview'
 */
 previewForm.get = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -168,8 +88,8 @@ previewForm.get = (args: { project: number | { id: number } } | [project: number
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::preview
-* @see app/Http/Controllers/DockerController.php:440
+* @see \App\Http\Controllers\ProjectDeploymentController::preview
+* @see app/Http/Controllers/ProjectDeploymentController.php:93
 * @route '/api/projects/{project}/docker/preview'
 */
 previewForm.head = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -185,8 +105,88 @@ previewForm.head = (args: { project: number | { id: number } } | [project: numbe
 preview.form = previewForm
 
 /**
-* @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:229
+* @see \App\Http\Controllers\ContainerController::start
+* @see app/Http/Controllers/ContainerController.php:23
+* @route '/api/projects/{project}/docker/start'
+*/
+export const start = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: start.url(args, options),
+    method: 'post',
+})
+
+start.definition = {
+    methods: ["post"],
+    url: '/api/projects/{project}/docker/start',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\ContainerController::start
+* @see app/Http/Controllers/ContainerController.php:23
+* @route '/api/projects/{project}/docker/start'
+*/
+start.url = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { project: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { project: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            project: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        project: typeof args.project === 'object'
+        ? args.project.id
+        : args.project,
+    }
+
+    return start.definition.url
+            .replace('{project}', parsedArgs.project.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\ContainerController::start
+* @see app/Http/Controllers/ContainerController.php:23
+* @route '/api/projects/{project}/docker/start'
+*/
+start.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: start.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ContainerController::start
+* @see app/Http/Controllers/ContainerController.php:23
+* @route '/api/projects/{project}/docker/start'
+*/
+const startForm = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: start.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ContainerController::start
+* @see app/Http/Controllers/ContainerController.php:23
+* @route '/api/projects/{project}/docker/start'
+*/
+startForm.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: start.url(args, options),
+    method: 'post',
+})
+
+start.form = startForm
+
+/**
+* @see \App\Http\Controllers\ContainerController::status
+* @see app/Http/Controllers/ContainerController.php:228
 * @route '/api/projects/{project}/docker/status'
 */
 export const status = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -200,8 +200,8 @@ status.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:229
+* @see \App\Http\Controllers\ContainerController::status
+* @see app/Http/Controllers/ContainerController.php:228
 * @route '/api/projects/{project}/docker/status'
 */
 status.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -227,8 +227,8 @@ status.url = (args: { project: string | number } | [project: string | number ] |
 }
 
 /**
-* @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:229
+* @see \App\Http\Controllers\ContainerController::status
+* @see app/Http/Controllers/ContainerController.php:228
 * @route '/api/projects/{project}/docker/status'
 */
 status.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -237,8 +237,8 @@ status.get = (args: { project: string | number } | [project: string | number ] |
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:229
+* @see \App\Http\Controllers\ContainerController::status
+* @see app/Http/Controllers/ContainerController.php:228
 * @route '/api/projects/{project}/docker/status'
 */
 status.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -247,8 +247,8 @@ status.head = (args: { project: string | number } | [project: string | number ] 
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:229
+* @see \App\Http\Controllers\ContainerController::status
+* @see app/Http/Controllers/ContainerController.php:228
 * @route '/api/projects/{project}/docker/status'
 */
 const statusForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -257,8 +257,8 @@ const statusForm = (args: { project: string | number } | [project: string | numb
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:229
+* @see \App\Http\Controllers\ContainerController::status
+* @see app/Http/Controllers/ContainerController.php:228
 * @route '/api/projects/{project}/docker/status'
 */
 statusForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -267,8 +267,8 @@ statusForm.get = (args: { project: string | number } | [project: string | number
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::status
-* @see app/Http/Controllers/DockerController.php:229
+* @see \App\Http\Controllers\ContainerController::status
+* @see app/Http/Controllers/ContainerController.php:228
 * @route '/api/projects/{project}/docker/status'
 */
 statusForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -284,8 +284,8 @@ statusForm.head = (args: { project: string | number } | [project: string | numbe
 status.form = statusForm
 
 /**
-* @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:275
+* @see \App\Http\Controllers\ContainerController::logs
+* @see app/Http/Controllers/ContainerController.php:271
 * @route '/api/projects/{project}/docker/logs'
 */
 export const logs = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -299,8 +299,8 @@ logs.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:275
+* @see \App\Http\Controllers\ContainerController::logs
+* @see app/Http/Controllers/ContainerController.php:271
 * @route '/api/projects/{project}/docker/logs'
 */
 logs.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -326,8 +326,8 @@ logs.url = (args: { project: string | number } | [project: string | number ] | s
 }
 
 /**
-* @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:275
+* @see \App\Http\Controllers\ContainerController::logs
+* @see app/Http/Controllers/ContainerController.php:271
 * @route '/api/projects/{project}/docker/logs'
 */
 logs.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -336,8 +336,8 @@ logs.get = (args: { project: string | number } | [project: string | number ] | s
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:275
+* @see \App\Http\Controllers\ContainerController::logs
+* @see app/Http/Controllers/ContainerController.php:271
 * @route '/api/projects/{project}/docker/logs'
 */
 logs.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -346,8 +346,8 @@ logs.head = (args: { project: string | number } | [project: string | number ] | 
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:275
+* @see \App\Http\Controllers\ContainerController::logs
+* @see app/Http/Controllers/ContainerController.php:271
 * @route '/api/projects/{project}/docker/logs'
 */
 const logsForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -356,8 +356,8 @@ const logsForm = (args: { project: string | number } | [project: string | number
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:275
+* @see \App\Http\Controllers\ContainerController::logs
+* @see app/Http/Controllers/ContainerController.php:271
 * @route '/api/projects/{project}/docker/logs'
 */
 logsForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -366,8 +366,8 @@ logsForm.get = (args: { project: string | number } | [project: string | number ]
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::logs
-* @see app/Http/Controllers/DockerController.php:275
+* @see \App\Http\Controllers\ContainerController::logs
+* @see app/Http/Controllers/ContainerController.php:271
 * @route '/api/projects/{project}/docker/logs'
 */
 logsForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -383,8 +383,8 @@ logsForm.head = (args: { project: string | number } | [project: string | number 
 logs.form = logsForm
 
 /**
-* @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:131
+* @see \App\Http\Controllers\ContainerController::stop
+* @see app/Http/Controllers/ContainerController.php:132
 * @route '/api/projects/{project}/docker/stop'
 */
 export const stop = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -398,8 +398,8 @@ stop.definition = {
 } satisfies RouteDefinition<["post"]>
 
 /**
-* @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:131
+* @see \App\Http\Controllers\ContainerController::stop
+* @see app/Http/Controllers/ContainerController.php:132
 * @route '/api/projects/{project}/docker/stop'
 */
 stop.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -425,8 +425,8 @@ stop.url = (args: { project: string | number } | [project: string | number ] | s
 }
 
 /**
-* @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:131
+* @see \App\Http\Controllers\ContainerController::stop
+* @see app/Http/Controllers/ContainerController.php:132
 * @route '/api/projects/{project}/docker/stop'
 */
 stop.post = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -435,8 +435,8 @@ stop.post = (args: { project: string | number } | [project: string | number ] | 
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:131
+* @see \App\Http\Controllers\ContainerController::stop
+* @see app/Http/Controllers/ContainerController.php:132
 * @route '/api/projects/{project}/docker/stop'
 */
 const stopForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -445,8 +445,8 @@ const stopForm = (args: { project: string | number } | [project: string | number
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::stop
-* @see app/Http/Controllers/DockerController.php:131
+* @see \App\Http\Controllers\ContainerController::stop
+* @see app/Http/Controllers/ContainerController.php:132
 * @route '/api/projects/{project}/docker/stop'
 */
 stopForm.post = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -457,8 +457,8 @@ stopForm.post = (args: { project: string | number } | [project: string | number 
 stop.form = stopForm
 
 /**
-* @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:179
+* @see \App\Http\Controllers\ContainerController::restart
+* @see app/Http/Controllers/ContainerController.php:180
 * @route '/api/projects/{project}/docker/restart'
 */
 export const restart = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -472,8 +472,8 @@ restart.definition = {
 } satisfies RouteDefinition<["post"]>
 
 /**
-* @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:179
+* @see \App\Http\Controllers\ContainerController::restart
+* @see app/Http/Controllers/ContainerController.php:180
 * @route '/api/projects/{project}/docker/restart'
 */
 restart.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -499,8 +499,8 @@ restart.url = (args: { project: string | number } | [project: string | number ] 
 }
 
 /**
-* @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:179
+* @see \App\Http\Controllers\ContainerController::restart
+* @see app/Http/Controllers/ContainerController.php:180
 * @route '/api/projects/{project}/docker/restart'
 */
 restart.post = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -509,8 +509,8 @@ restart.post = (args: { project: string | number } | [project: string | number ]
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:179
+* @see \App\Http\Controllers\ContainerController::restart
+* @see app/Http/Controllers/ContainerController.php:180
 * @route '/api/projects/{project}/docker/restart'
 */
 const restartForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -519,8 +519,8 @@ const restartForm = (args: { project: string | number } | [project: string | num
 })
 
 /**
-* @see \App\Http\Controllers\DockerController::restart
-* @see app/Http/Controllers/DockerController.php:179
+* @see \App\Http\Controllers\ContainerController::restart
+* @see app/Http/Controllers/ContainerController.php:180
 * @route '/api/projects/{project}/docker/restart'
 */
 restartForm.post = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -531,8 +531,8 @@ restartForm.post = (args: { project: string | number } | [project: string | numb
 restart.form = restartForm
 
 const docker = {
-    start,
     preview,
+    start,
     status,
     logs,
     stop,

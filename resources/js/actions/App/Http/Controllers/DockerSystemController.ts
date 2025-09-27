@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\DockerSystemController::info
 * @see app/Http/Controllers/DockerSystemController.php:20
@@ -81,76 +81,76 @@ infoForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 info.form = infoForm
 
 /**
-* @see \App\Http\Controllers\DockerSystemController::containers
+* @see \App\Http\Controllers\DockerSystemController::getRunningContainers
 * @see app/Http/Controllers/DockerSystemController.php:45
 * @route '/api/docker/containers'
 */
-export const containers = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: containers.url(options),
+export const getRunningContainers = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: getRunningContainers.url(options),
     method: 'get',
 })
 
-containers.definition = {
+getRunningContainers.definition = {
     methods: ["get","head"],
     url: '/api/docker/containers',
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see \App\Http\Controllers\DockerSystemController::containers
+* @see \App\Http\Controllers\DockerSystemController::getRunningContainers
 * @see app/Http/Controllers/DockerSystemController.php:45
 * @route '/api/docker/containers'
 */
-containers.url = (options?: RouteQueryOptions) => {
-    return containers.definition.url + queryParams(options)
+getRunningContainers.url = (options?: RouteQueryOptions) => {
+    return getRunningContainers.definition.url + queryParams(options)
 }
 
 /**
-* @see \App\Http\Controllers\DockerSystemController::containers
+* @see \App\Http\Controllers\DockerSystemController::getRunningContainers
 * @see app/Http/Controllers/DockerSystemController.php:45
 * @route '/api/docker/containers'
 */
-containers.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: containers.url(options),
+getRunningContainers.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: getRunningContainers.url(options),
     method: 'get',
 })
 
 /**
-* @see \App\Http\Controllers\DockerSystemController::containers
+* @see \App\Http\Controllers\DockerSystemController::getRunningContainers
 * @see app/Http/Controllers/DockerSystemController.php:45
 * @route '/api/docker/containers'
 */
-containers.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
-    url: containers.url(options),
+getRunningContainers.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: getRunningContainers.url(options),
     method: 'head',
 })
 
 /**
-* @see \App\Http\Controllers\DockerSystemController::containers
+* @see \App\Http\Controllers\DockerSystemController::getRunningContainers
 * @see app/Http/Controllers/DockerSystemController.php:45
 * @route '/api/docker/containers'
 */
-const containersForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: containers.url(options),
+const getRunningContainersForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: getRunningContainers.url(options),
     method: 'get',
 })
 
 /**
-* @see \App\Http\Controllers\DockerSystemController::containers
+* @see \App\Http\Controllers\DockerSystemController::getRunningContainers
 * @see app/Http/Controllers/DockerSystemController.php:45
 * @route '/api/docker/containers'
 */
-containersForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: containers.url(options),
+getRunningContainersForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: getRunningContainers.url(options),
     method: 'get',
 })
 
 /**
-* @see \App\Http\Controllers\DockerSystemController::containers
+* @see \App\Http\Controllers\DockerSystemController::getRunningContainers
 * @see app/Http/Controllers/DockerSystemController.php:45
 * @route '/api/docker/containers'
 */
-containersForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: containers.url({
+getRunningContainersForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: getRunningContainers.url({
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
             ...(options?.query ?? options?.mergeQuery ?? {}),
@@ -159,7 +159,7 @@ containersForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
     method: 'get',
 })
 
-containers.form = containersForm
+getRunningContainers.form = getRunningContainersForm
 
 /**
 * @see \App\Http\Controllers\DockerSystemController::cleanup
@@ -217,10 +217,6 @@ cleanupForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =>
 
 cleanup.form = cleanupForm
 
-const docker = {
-    info,
-    containers,
-    cleanup,
-}
+const DockerSystemController = { info, getRunningContainers, cleanup }
 
-export default docker
+export default DockerSystemController

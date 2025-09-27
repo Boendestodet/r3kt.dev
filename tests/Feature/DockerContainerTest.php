@@ -26,6 +26,7 @@ beforeEach(function () {
             'tsconfig.json' => '{"compilerOptions": {}}',
         ]),
         'status' => 'ready',
+        'settings' => ['stack' => 'nextjs'], // Ensure stack is set for new controller structure
     ]);
 });
 
@@ -115,7 +116,7 @@ it('can stop a running container', function () {
     $container = $this->project->containers()->latest()->first();
 
     // Stop the container
-    $response = $this->post("/api/containers/{$container->id}/docker/stop");
+    $response = $this->post("/api/containers/{$container->id}/stop");
 
     $response->assertSuccessful();
     $response->assertJson([
@@ -140,10 +141,10 @@ it('can restart a stopped container', function () {
     // Create and stop a container
     $this->post("/api/projects/{$this->project->id}/docker/start");
     $container = $this->project->containers()->latest()->first();
-    $this->post("/api/containers/{$container->id}/docker/stop");
+    $this->post("/api/containers/{$container->id}/stop");
 
     // Restart the container
-    $response = $this->post("/api/containers/{$container->id}/docker/restart");
+    $response = $this->post("/api/containers/{$container->id}/restart");
 
     $response->assertSuccessful();
     $response->assertJson([
@@ -170,7 +171,7 @@ it('can get container status and health', function () {
     $container = $this->project->containers()->latest()->first();
 
     // Get container status
-    $response = $this->get("/api/containers/{$container->id}/docker/status");
+    $response = $this->get("/api/containers/{$container->id}/status");
 
     $response->assertSuccessful();
     $response->assertJsonStructure([
@@ -206,7 +207,7 @@ it('can get container logs', function () {
     $container = $this->project->containers()->latest()->first();
 
     // Get container logs
-    $response = $this->get("/api/containers/{$container->id}/docker/logs");
+    $response = $this->get("/api/containers/{$container->id}/logs");
 
     $response->assertSuccessful();
     $response->assertJsonStructure([
@@ -338,5 +339,90 @@ it('returns service unavailable when Docker is not available', function () {
     } else {
         // If Docker is available, the test should pass
         $response->assertSuccessful();
+    }
+});
+
+it('can create containers for different stack types', function () {
+    // Test Next.js project
+    $nextjsProject = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'generated_code' => json_encode([
+            'package.json' => '{"name": "nextjs-test", "scripts": {"dev": "next dev"}}',
+            'app/page.tsx' => '<div>Next.js Page</div>',
+        ]),
+        'status' => 'ready',
+        'settings' => ['stack' => 'nextjs'],
+    ]);
+
+    // Test Vite React project
+    $viteReactProject = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'generated_code' => json_encode([
+            'package.json' => '{"name": "vite-react-test", "scripts": {"dev": "vite"}}',
+            'src/App.tsx' => '<div>Vite React App</div>',
+        ]),
+        'status' => 'ready',
+        'settings' => ['stack' => 'vite-react'],
+    ]);
+
+    // Test Vite Vue project
+    $viteVueProject = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'generated_code' => json_encode([
+            'package.json' => '{"name": "vite-vue-test", "scripts": {"dev": "vite"}}',
+            'src/App.vue' => '<template><div>Vite Vue App</div></template>',
+        ]),
+        'status' => 'ready',
+        'settings' => ['stack' => 'vite-vue'],
+    ]);
+
+    // Test SvelteKit project
+    $svelteKitProject = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'generated_code' => json_encode([
+            'package.json' => '{"name": "sveltekit-test", "scripts": {"dev": "vite dev"}}',
+            'src/routes/+page.svelte' => '<div>SvelteKit Page</div>',
+        ]),
+        'status' => 'ready',
+        'settings' => ['stack' => 'sveltekit'],
+    ]);
+
+    // Skip if Docker is not available
+    if (! app(\App\Services\DockerService::class)->isDockerAvailable()) {
+        $this->markTestSkipped('Docker not available');
+    }
+
+    // Test each stack type
+    $projects = [
+        'Next.js' => $nextjsProject,
+        'Vite React' => $viteReactProject,
+        'Vite Vue' => $viteVueProject,
+        'SvelteKit' => $svelteKitProject,
+    ];
+
+    foreach ($projects as $stackName => $project) {
+        $response = $this->post("/api/projects/{$project->id}/docker/start");
+
+        $response->assertSuccessful();
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
+                'container_id',
+                'url',
+                'port',
+                'status',
+            ],
+        ]);
+
+        // Verify container was created in database
+        $this->assertDatabaseHas('containers', [
+            'project_id' => $project->id,
+            'status' => 'running',
+        ]);
+
+        // Clean up the container
+        $container = $project->containers()->latest()->first();
+        $this->post("/api/containers/{$container->id}/stop");
     }
 });

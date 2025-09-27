@@ -36,7 +36,7 @@ it('can generate a real website with Claude AI', function () {
     $response->assertSuccessful();
 
     // Wait for AI processing to complete
-    $this->waitForPromptCompletion($this->project);
+    waitForPromptCompletion($this->project);
 
     // Verify the project was updated with generated code
     $this->project->refresh();
@@ -64,7 +64,7 @@ it('can generate a real website with OpenAI', function () {
     $response->assertSuccessful();
 
     // Wait for AI processing to complete
-    $this->waitForPromptCompletion($this->project);
+    waitForPromptCompletion($this->project);
 
     // Verify the project was updated with generated code
     $this->project->refresh();
@@ -86,7 +86,7 @@ it('can generate and auto-start container with real AI', function () {
     $response->assertSuccessful();
 
     // Wait for AI processing to complete
-    $this->waitForPromptCompletion($this->project);
+    waitForPromptCompletion($this->project);
 
     // Verify the project was updated with generated code
     $this->project->refresh();
@@ -98,6 +98,28 @@ it('can generate and auto-start container with real AI', function () {
     if (count($containers) > 0) {
         expect($containers->first()->status)->toBeIn(['starting', 'running']);
     }
+});
+
+it('can generate a real website with Gemini', function () {
+    // Skip if Gemini API key is not configured
+    if (! config('services.gemini.api_key')) {
+        $this->markTestSkipped('Gemini API key not configured');
+    }
+
+    $response = $this->post("/projects/{$this->project->id}/prompts", [
+        'prompt' => 'Create a beautiful portfolio website with dark theme and animations',
+        'auto_start_container' => false,
+    ]);
+
+    $response->assertSuccessful();
+
+    // Wait for AI processing to complete
+    waitForPromptCompletion($this->project);
+
+    // Verify the project was updated with generated code
+    $this->project->refresh();
+    expect($this->project->generated_code)->not->toBeNull();
+    expect($this->project->status)->toBe('ready');
 });
 
 it('handles AI generation errors gracefully', function () {

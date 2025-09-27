@@ -31,6 +31,8 @@
   - ✅ Next.js with OpenAI
   - ✅ Vite + React + TypeScript with Claude Code
   - ✅ Vite + React + TypeScript with OpenAI
+  - ✅ SvelteKit with TypeScript with Claude Code
+  - ✅ SvelteKit with TypeScript with OpenAI
 - **Multiple website templates**:
   - Portfolio websites
   - E-commerce sites
@@ -168,7 +170,7 @@
 - **Error Handling**: Graceful fallback ensures system never fails
 - **Token Tracking**: Complete usage monitoring and cost estimation
 - **Token Management**: ✅ Fixed token limits (4000) for reliable generation
-- **Provider Support**: ✅ Claude Code + OpenAI working with all frameworks (Next.js + Vite)
+- **Provider Support**: ✅ Claude Code + OpenAI working with all frameworks (Next.js + Vite + SvelteKit)
 - **Prompt Following**: ✅ AI follows user prompts exactly instead of generic mock content
 - **Queue Worker**: ✅ Fixed configuration caching issues for real AI generation
 

@@ -30,11 +30,13 @@ class DockerService
             $htmlContent = $container->project->generated_code ?? $this->getDefaultHtml();
             $this->createProjectFiles($container, $htmlContent);
 
-            // Build and start Docker container
-            $containerId = $this->buildAndRunContainer($container);
+            // Get available port once and use it for both Docker and database
+            $port = $this->getAvailablePort();
+
+            // Build and start Docker container with the allocated port
+            $containerId = $this->buildAndRunContainer($container, $port);
 
             if ($containerId) {
-                $port = $this->getAvailablePort();
                 $url = $this->getProjectUrl($container->project, $port);
 
                 $container->update([
@@ -115,533 +117,37 @@ class DockerService
     {
         $projectDir = storage_path("app/projects/{$container->project->id}");
 
-        if (! is_dir($projectDir)) {
-            mkdir($projectDir, 0755, true);
-        }
+        // Create project directory with proper permissions
+        FilePermissionService::createDirectory($projectDir, 0755);
 
-        // Check project type by looking at the project settings
-        $isNextJSProject = $this->isNextJSProject($container->project);
-        $isViteProject = $this->isViteProject($container->project);
+        // Get the appropriate stack controller
+        $stackController = app(\App\Services\StackControllerFactory::class)->getController($container->project);
 
-        if ($isNextJSProject) {
-            // Parse the project data as Next.js project
-            $projectFiles = json_decode($projectData, true);
-
-            if ($projectFiles && is_array($projectFiles)) {
-                // Next.js project structure
-                $this->createNextJSProject($projectDir, $projectFiles);
-            } else {
-                // Fallback: create basic Next.js structure if no generated code
-                $this->createBasicNextJSFallback($projectDir, $container->project);
-            }
-        } elseif ($isViteProject) {
-            // Parse the project data as Vite project
-            $projectFiles = json_decode($projectData, true);
-
-            if ($projectFiles && is_array($projectFiles)) {
-                // Vite project structure
-                $this->createViteProject($projectDir, $projectFiles);
-            } else {
-                // Fallback: create basic Vite structure if no generated code
-                $this->createBasicViteFallback($projectDir, $container->project);
-            }
-        } else {
-            // Legacy HTML project (only if not Next.js or Vite)
-            file_put_contents("{$projectDir}/index.html", $projectData);
-            $this->createDockerfile($projectDir);
-            $this->createNginxConfig($projectDir);
-        }
-    }
-
-    /**
-     * Create Next.js project files
-     */
-    private function createNextJSProject(string $projectDir, array $projectFiles): void
-    {
-        // Define protected files that should not be overwritten by AI
-        $protectedFiles = [
-            'next.config.js',
-            'package.json',
-            'tsconfig.json',
-            'tailwind.config.js',
-            'postcss.config.js',
-            '.eslintrc.json',
-            'Dockerfile',
-            '.dockerignore',
-            'docker-compose.yml'
-        ];
-
-        foreach ($projectFiles as $filePath => $content) {
-            // Skip protected files - we'll create them ourselves
-            if (in_array($filePath, $protectedFiles)) {
-                Log::info('Skipping protected file from AI generation', [
-                    'file' => $filePath,
-                    'reason' => 'Protected configuration file'
-                ]);
-                continue;
-            }
-
-            $fullPath = "{$projectDir}/{$filePath}";
-            $dir = dirname($fullPath);
-
-            if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
-
-            file_put_contents($fullPath, $content);
-        }
-
-        // BULLETPROOF PROTECTION: Delete any AI-generated config files that might have been written
-        foreach ($protectedFiles as $protectedFile) {
-            $protectedFilePath = "{$projectDir}/{$protectedFile}";
-            if (file_exists($protectedFilePath)) {
-                Log::warning('Deleting AI-generated protected file', [
-                    'file' => $protectedFile,
-                    'reason' => 'AI ignored protection instructions'
-                ]);
-                unlink($protectedFilePath);
-            }
-        }
-
-        // Ensure we have a complete package.json with all Next.js dependencies
-        $this->ensureCompletePackageJson($projectDir, $projectFiles);
-
-        // Create Dockerfile for Next.js project
-        $this->createDockerfile($projectDir);
-    }
-
-    /**
-     * Ensure package.json has all required Next.js dependencies
-     */
-    private function ensureCompletePackageJson(string $projectDir, array $projectFiles): void
-    {
-        $packageJsonPath = "{$projectDir}/package.json";
-
-        // Parse existing package.json or create default
-        $packageJson = [];
-        if (file_exists($packageJsonPath)) {
-            $existingContent = file_get_contents($packageJsonPath);
-            $packageJson = json_decode($existingContent, true) ?: [];
-        }
-
-        // Set default values if not present
-        $packageJson['name'] = $packageJson['name'] ?? 'ai-generated-project';
-        $packageJson['version'] = $packageJson['version'] ?? '0.1.0';
-        $packageJson['private'] = $packageJson['private'] ?? true;
-
-        // Ensure scripts are present (prioritize our enhanced scripts)
-        $packageJson['scripts'] = array_merge($packageJson['scripts'] ?? [], [
-            'dev' => 'next dev --turbopack',
-            'build' => 'next build --turbopack',
-            'start' => 'next start',
-            'lint' => 'biome check',
-            'format' => 'biome format --write',
+        Log::info('DockerService using stack controller', [
+            'project_id' => $container->project->id,
+            'stack' => $container->project->settings['stack'] ?? 'NOT SET',
+            'controller' => get_class($stackController),
+            'project_data_length' => strlen($projectData),
         ]);
 
-        // Add required dependencies
-        $packageJson['dependencies'] = array_merge([
-            'react' => '19.1.0',
-            'react-dom' => '19.1.0',
-            'next' => '15.5.3',
-        ], $packageJson['dependencies'] ?? []);
+        // Parse the project data
+        $projectFiles = json_decode($projectData, true);
 
-        // Add dev dependencies
-        $packageJson['devDependencies'] = array_merge([
-            'typescript' => '^5',
-            '@types/node' => '^20',
-            '@types/react' => '^19',
-            '@types/react-dom' => '^19',
-            '@tailwindcss/postcss' => '^4',
-            'tailwindcss' => '^4',
-            '@biomejs/biome' => '2.2.0',
-        ], $packageJson['devDependencies'] ?? []);
-
-        // Write the complete package.json
-        file_put_contents($packageJsonPath, json_encode($packageJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-
-        // Create additional required configuration files
-        $this->createNextJSConfigFiles($projectDir);
-    }
-
-    /**
-     * Create additional Next.js configuration files
-     */
-    private function createNextJSConfigFiles(string $projectDir): void
-    {
-        // Create tailwind.config.js for Tailwind CSS v4
-        $tailwindConfigPath = "{$projectDir}/tailwind.config.js";
-        if (! file_exists($tailwindConfigPath)) {
-            $tailwindConfig = <<<'JS'
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-JS;
-            file_put_contents($tailwindConfigPath, $tailwindConfig);
-        }
-
-        // Create postcss.config.js for Tailwind CSS v4
-        $postcssConfigPath = "{$projectDir}/postcss.config.js";
-        if (! file_exists($postcssConfigPath)) {
-            $postcssConfig = <<<'JS'
-module.exports = {
-  plugins: {
-    '@tailwindcss/postcss': {},
-  },
-}
-JS;
-            file_put_contents($postcssConfigPath, $postcssConfig);
-        }
-
-        // Create biome.json configuration
-        $biomeConfigPath = "{$projectDir}/biome.json";
-        if (! file_exists($biomeConfigPath)) {
-            $biomeConfig = <<<'JSON'
-{
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true
-    }
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2
-  },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "double",
-      "semicolons": "asNeeded"
-    }
-  }
-}
-JSON;
-            file_put_contents($biomeConfigPath, $biomeConfig);
-        }
-    }
-
-    /**
-     * Create additional Vite configuration files
-     */
-    private function createViteConfigFiles(string $projectDir): void
-    {
-        // Create vite.config.ts (ALWAYS overwrite to ensure correct Docker config)
-        $viteConfigPath = "{$projectDir}/vite.config.ts";
-        $viteConfig = <<<'TS'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-  },
-})
-TS;
-        
-        // Ensure we can write the file by fixing permissions if needed
-        if (file_exists($viteConfigPath)) {
-            chmod($viteConfigPath, 0644);
-        }
-        
-        $result = file_put_contents($viteConfigPath, $viteConfig);
-        
-        if ($result === false) {
-            Log::error('Failed to create vite.config.ts', [
-                'project_dir' => $projectDir,
-                'file' => $viteConfigPath,
-            ]);
-        }
-
-        // Create tsconfig.json
-        $tsconfigPath = "{$projectDir}/tsconfig.json";
-        if (! file_exists($tsconfigPath)) {
-            $tsconfig = <<<'JSON'
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
-JSON;
-            file_put_contents($tsconfigPath, $tsconfig);
-        }
-
-        // Create tsconfig.node.json
-        $tsconfigNodePath = "{$projectDir}/tsconfig.node.json";
-        if (! file_exists($tsconfigNodePath)) {
-            $tsconfigNode = <<<'JSON'
-{
-  "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["vite.config.ts"]
-}
-JSON;
-            file_put_contents($tsconfigNodePath, $tsconfigNode);
-        }
-
-        // Create tailwind.config.js for Tailwind CSS v3
-        $tailwindConfigPath = "{$projectDir}/tailwind.config.js";
-        if (! file_exists($tailwindConfigPath)) {
-            $tailwindConfig = <<<'JS'
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-JS;
-            file_put_contents($tailwindConfigPath, $tailwindConfig);
-        }
-
-        // Create postcss.config.js for Tailwind CSS
-        $postcssConfigPath = "{$projectDir}/postcss.config.js";
-        if (! file_exists($postcssConfigPath)) {
-            $postcssConfig = <<<'JS'
-export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}
-JS;
-            file_put_contents($postcssConfigPath, $postcssConfig);
-        }
-
-        // Create .eslintrc.cjs
-        $eslintConfigPath = "{$projectDir}/.eslintrc.cjs";
-        if (! file_exists($eslintConfigPath)) {
-            $eslintConfig = <<<'JS'
-module.exports = {
-  root: true,
-  env: { browser: true, es2020: true },
-  extends: [
-    'eslint:recommended',
-    '@typescript-eslint/recommended',
-    'plugin:react-hooks/recommended',
-  ],
-  ignorePatterns: ['dist', '.eslintrc.cjs'],
-  parser: '@typescript-eslint/parser',
-  plugins: ['react-refresh'],
-  rules: {
-    'react-refresh/only-export-components': [
-      'warn',
-      { allowConstantExport: true },
-    ],
-  },
-}
-JS;
-            file_put_contents($eslintConfigPath, $eslintConfig);
-        }
-
-        // Create package.json
-        $packageJsonPath = "{$projectDir}/package.json";
-        if (! file_exists($packageJsonPath)) {
-            $packageJson = <<<'JSON'
-{
-  "name": "vite-react-ts",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
-    "@vitejs/plugin-react": "^4.2.1",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.6",
-    "typescript": "^5.2.2",
-    "vite": "^5.2.0",
-    "tailwindcss": "^3.4.0",
-    "autoprefixer": "^10.4.17",
-    "postcss": "^8.4.35"
-  }
-}
-JSON;
-            file_put_contents($packageJsonPath, $packageJson);
-        }
-    }
-
-    /**
-     * Create Dockerfile for the project
-     */
-    private function createDockerfile(string $projectDir): void
-    {
-        // Check project type by looking for specific files
-        if (file_exists("{$projectDir}/next.config.js") || file_exists("{$projectDir}/app")) {
-            $this->createNextJSDockerfile($projectDir);
-        } elseif (file_exists("{$projectDir}/vite.config.ts") || file_exists("{$projectDir}/vite.config.js")) {
-            $this->createViteDockerfile($projectDir);
+        if ($projectFiles && is_array($projectFiles)) {
+            // Use stack controller to create project files
+            $stackController->createProjectFiles($projectDir, $projectFiles);
         } else {
-            // Default to HTML for projects without specific framework detection
-            $this->createHTMLDockerfile($projectDir);
+            // Check if files already exist (created by ProjectController)
+            if ($stackController->hasRequiredFiles($projectDir)) {
+                Log::info('Project files already exist, skipping fallback creation', [
+                    'project_id' => $container->project->id,
+                    'project_dir' => $projectDir,
+                ]);
+            } else {
+                // Fallback: create basic structure if no generated code
+                $stackController->createBasicFallback($projectDir, $container->project);
+            }
         }
-    }
-
-    /**
-     * Create Dockerfile for HTML projects
-     */
-    private function createHTMLDockerfile(string $projectDir): void
-    {
-        $dockerfile = 'FROM nginx:alpine
-
-# Copy project files
-COPY . /usr/share/nginx/html/
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port 80
-EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]';
-
-        file_put_contents("{$projectDir}/Dockerfile", $dockerfile);
-    }
-
-    /**
-     * Create Dockerfile for Next.js projects (Development Mode for Live Previews)
-     */
-    private function createNextJSDockerfile(string $projectDir): void
-    {
-        $dockerfile = 'FROM node:18-alpine
-
-WORKDIR /app
-
-# Copy package files
-COPY package.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy source code
-COPY . .
-
-# Expose port
-EXPOSE 3000
-
-# Start the development server for live previews
-CMD ["npm", "run", "dev"]';
-
-        file_put_contents("{$projectDir}/Dockerfile", $dockerfile);
-    }
-
-    /**
-     * Create Dockerfile for Vite projects (Development Mode for Live Previews)
-     */
-    private function createViteDockerfile(string $projectDir): void
-    {
-        $dockerfile = 'FROM node:18-alpine
-
-WORKDIR /app
-
-# Copy package files and config files first
-COPY package.json ./
-COPY vite.config.ts ./
-COPY tsconfig.json ./
-COPY tsconfig.node.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy remaining source code
-COPY . .
-
-# Expose port
-EXPOSE 5173
-
-# Start the development server for live previews
-CMD ["npm", "run", "dev"]';
-
-        file_put_contents("{$projectDir}/Dockerfile", $dockerfile);
-    }
-
-    /**
-     * Create nginx configuration
-     */
-    private function createNginxConfig(string $projectDir): void
-    {
-        $nginxConfig = "server {
-    listen 80;
-    server_name _;
-    root /usr/share/nginx/html;
-    index index.html;
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Enable gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
-
-    # Cache static assets
-    location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg)$ {
-        expires 1y;
-        add_header Cache-Control \"public, immutable\";
-    }
-}";
-
-        file_put_contents("{$projectDir}/nginx.conf", $nginxConfig);
     }
 
     /**
@@ -649,24 +155,27 @@ CMD ["npm", "run", "dev"]';
      */
     private function getInternalPort(string $projectDir): string
     {
-        // Check for Next.js project
+        // Try to determine project type from files
         if (file_exists("{$projectDir}/next.config.js") || file_exists("{$projectDir}/app")) {
-            return '3000';
+            return '3000'; // Next.js
         }
-        
-        // Check for Vite project
+
         if (file_exists("{$projectDir}/vite.config.ts") || file_exists("{$projectDir}/vite.config.js")) {
-            return '5173';
+            return '5173'; // Vite (React or Vue)
         }
-        
-        // Default to HTML/nginx port
-        return '80';
+
+        if (file_exists("{$projectDir}/svelte.config.js")) {
+            return '5173'; // SvelteKit
+        }
+
+        // Default to Next.js port
+        return '3000';
     }
 
     /**
      * Build and run Docker container for the project
      */
-    private function buildAndRunContainer(Container $container): ?string
+    private function buildAndRunContainer(Container $container, int $port): ?string
     {
         try {
             // In testing environment, simulate Docker container creation
@@ -682,13 +191,12 @@ CMD ["npm", "run", "dev"]';
                     'error' => $dockerCheck->errorOutput(),
                 ]);
 
-                return $this->runFallbackServer($container);
+                return $this->runFallbackServer($container, $port);
             }
 
             $projectDir = storage_path("app/projects/{$container->project->id}");
             $imageName = "lovable-project-{$container->project->id}";
             $containerName = "lovable-container-{$container->project->id}";
-            $port = $this->getAvailablePort();
 
             // Ensure project directory exists
             if (! is_dir($projectDir)) {
@@ -712,7 +220,7 @@ CMD ["npm", "run", "dev"]';
                     'output' => $buildResult->output(),
                 ]);
 
-                return $this->runFallbackServer($container);
+                return $this->runFallbackServer($container, $port);
             }
 
             Log::info('Docker image built successfully', [
@@ -731,14 +239,55 @@ CMD ["npm", "run", "dev"]';
             $runResult = Process::timeout(60)->run($runCommand);
 
             if (! $runResult->successful()) {
+                $errorOutput = $runResult->errorOutput();
+
+                // Check if it's a port conflict error
+                if (strpos($errorOutput, 'address already in use') !== false) {
+                    Log::error('Docker run failed due to port conflict', [
+                        'project_id' => $container->project_id,
+                        'command' => $runCommand,
+                        'port' => $port,
+                        'error' => $errorOutput,
+                    ]);
+
+                    // Try to find another available port
+                    $newPort = $this->findAlternativePort($port);
+                    if ($newPort && $newPort !== $port) {
+                        Log::info('Retrying with alternative port', [
+                            'project_id' => $container->project_id,
+                            'old_port' => $port,
+                            'new_port' => $newPort,
+                        ]);
+
+                        // Update the container with the new port
+                        $container->update(['port' => $newPort]);
+
+                        // Try again with the new port
+                        $retryCommand = "docker run -d --name {$containerName} -p {$newPort}:{$internalPort} --restart=unless-stopped {$imageName}";
+                        $retryResult = Process::timeout(60)->run($retryCommand);
+
+                        if ($retryResult->successful()) {
+                            $containerId = trim($retryResult->output());
+                            Log::info('Docker container started successfully on retry', [
+                                'project_id' => $container->project_id,
+                                'container_id' => $containerId,
+                                'container_name' => $containerName,
+                                'port' => $newPort,
+                            ]);
+
+                            return $containerName;
+                        }
+                    }
+                }
+
                 Log::error('Docker run failed', [
                     'project_id' => $container->project_id,
                     'command' => $runCommand,
-                    'error' => $runResult->errorOutput(),
+                    'error' => $errorOutput,
                     'output' => $runResult->output(),
                 ]);
 
-                return $this->runFallbackServer($container);
+                return $this->runFallbackServer($container, $port);
             }
 
             $containerId = trim($runResult->output());
@@ -758,17 +307,16 @@ CMD ["npm", "run", "dev"]';
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->runFallbackServer($container);
+            return $this->runFallbackServer($container, $port);
         }
     }
 
     /**
      * Fallback server when Docker is not available
      */
-    private function runFallbackServer(Container $container): string
+    private function runFallbackServer(Container $container, int $port): string
     {
         $projectDir = storage_path("app/projects/{$container->project->id}");
-        $port = $this->getAvailablePort();
 
         // Use PHP's built-in server as fallback
         $command = "cd {$projectDir} && php -S 0.0.0.0:{$port} > /dev/null 2>&1 &";
@@ -791,12 +339,23 @@ CMD ["npm", "run", "dev"]';
             ->pluck('port')
             ->toArray();
 
+        // Also check for ports used by Docker containers
+        $dockerPorts = $this->getDockerPortsInUse();
+
+        // Combine both lists
+        $allUsedPorts = array_unique(array_merge($usedPorts, $dockerPorts));
+
         // Find an available port
         for ($i = 0; $i < $maxPorts; $i++) {
             $port = $basePort + $i;
 
-            // Check if port is not used by our containers and is available on system
-            if (! in_array($port, $usedPorts) && $this->isPortAvailable($port)) {
+            // Check if port is not used by our containers or Docker
+            if (! in_array($port, $allUsedPorts) && $this->isPortAvailable($port)) {
+                Log::info('Found available port', [
+                    'port' => $port,
+                    'used_ports' => $allUsedPorts,
+                ]);
+
                 return $port;
             }
         }
@@ -806,6 +365,76 @@ CMD ["npm", "run", "dev"]';
         Log::warning("No available ports found, using random port: {$randomPort}");
 
         return $randomPort;
+    }
+
+    /**
+     * Get ports currently in use by Docker containers
+     */
+    private function getDockerPortsInUse(): array
+    {
+        try {
+            // Get all running Docker containers and their port mappings
+            $result = Process::run('docker ps --format "table {{.Ports}}" | grep -o "0.0.0.0:[0-9]*" | cut -d: -f2');
+
+            if ($result->successful()) {
+                $ports = array_filter(array_map('intval', explode("\n", trim($result->output()))));
+                Log::info('Docker ports in use', ['ports' => $ports]);
+
+                return $ports;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to get Docker ports in use', ['error' => $e->getMessage()]);
+        }
+
+        return [];
+    }
+
+    /**
+     * Find an alternative port when the original port is in use
+     */
+    private function findAlternativePort(int $originalPort): ?int
+    {
+        $basePort = 8000;
+        $maxPorts = 1000;
+
+        // Get all used ports
+        $usedPorts = Container::whereNotNull('port')
+            ->where('status', 'running')
+            ->pluck('port')
+            ->toArray();
+
+        $dockerPorts = $this->getDockerPortsInUse();
+        $allUsedPorts = array_unique(array_merge($usedPorts, $dockerPorts));
+
+        // Try to find a port starting from the original port + 1
+        for ($i = 1; $i < 100; $i++) {
+            $port = $originalPort + $i;
+
+            // Don't exceed the maximum port range
+            if ($port > $basePort + $maxPorts) {
+                break;
+            }
+
+            if (! in_array($port, $allUsedPorts) && $this->isPortAvailable($port)) {
+                return $port;
+            }
+        }
+
+        // If no port found after the original, try before it
+        for ($i = 1; $i < 100; $i++) {
+            $port = $originalPort - $i;
+
+            // Don't go below the base port
+            if ($port < $basePort) {
+                break;
+            }
+
+            if (! in_array($port, $allUsedPorts) && $this->isPortAvailable($port)) {
+                return $port;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -872,6 +501,29 @@ CMD ["npm", "run", "dev"]';
         $host = config('app.url');
 
         return "{$host}:{$container->port}";
+    }
+
+    /**
+     * Get default HTML content for projects without generated code
+     */
+    private function getDefaultHtml(): string
+    {
+        return '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Loading...</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .loading { color: #666; }
+    </style>
+</head>
+<body>
+    <h1 class="loading">Project is being generated...</h1>
+    <p>Please wait while your project is being created.</p>
+</body>
+</html>';
     }
 
     /**
@@ -1384,6 +1036,37 @@ CMD ["npm", "run", "dev"]';
     }
 
     /**
+     * Get project preview URL
+     */
+    public function getProjectPreviewUrl(Project $project): string
+    {
+        $container = $project->containers()->where('status', 'running')->first();
+
+        if ($container && $container->url) {
+            return $container->url;
+        }
+
+        // Fallback to project's preview URL
+        return $project->preview_url ?? '';
+    }
+
+    /**
+     * Get all running containers
+     */
+    public function getRunningContainers(): array
+    {
+        return $this->getAllRunningContainers();
+    }
+
+    /**
+     * Clean up Docker resources
+     */
+    public function cleanup(): array
+    {
+        return $this->cleanupOldResources();
+    }
+
+    /**
      * Get Docker system information
      */
     public function getDockerInfo(): array
@@ -1440,510 +1123,6 @@ CMD ["npm", "run", "dev"]';
                 'status' => 'error',
                 'error' => $e->getMessage(),
             ];
-        }
-    }
-
-    /**
-     * Check if this is a Next.js project based on project settings
-     */
-    private function isNextJSProject(Project $project): bool
-    {
-        $settings = $project->settings ?? [];
-        $stack = $settings['stack'] ?? 'nextjs';
-        
-        return $stack === 'nextjs' || $stack === 'Next.js';
-    }
-
-    /**
-     * Check if this is a Vite project based on project settings
-     */
-    private function isViteProject(Project $project): bool
-    {
-        $settings = $project->settings ?? [];
-        $stack = $settings['stack'] ?? '';
-        
-        return $stack === 'vite' || $stack === 'Vite + React';
-    }
-
-    /**
-     * Create basic Next.js fallback when no generated code is available
-     */
-    private function createBasicNextJSFallback(string $projectDir, Project $project): void
-    {
-        // Create a basic Next.js structure
-        $basicNextJS = [
-            'package.json' => json_encode([
-                'name' => strtolower($project->slug ?? 'ai-project'),
-                'version' => '0.1.0',
-                'private' => true,
-                'scripts' => [
-                    'dev' => 'next dev --turbopack',
-                    'build' => 'next build --turbopack',
-                    'start' => 'next start',
-                    'lint' => 'biome check',
-                ],
-                'dependencies' => [
-                    'react' => '19.1.0',
-                    'react-dom' => '19.1.0',
-                    'next' => '15.5.3',
-                ],
-                'devDependencies' => [
-                    'typescript' => '^5',
-                    '@types/node' => '^20',
-                    '@types/react' => '^19',
-                    '@types/react-dom' => '^19',
-                    '@tailwindcss/postcss' => '^4',
-                    'tailwindcss' => '^4',
-                    '@biomejs/biome' => '2.2.0',
-                ],
-            ], JSON_PRETTY_PRINT),
-            'app/page.tsx' => 'export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold">Welcome to Your Next.js Project</h1>
-      <p className="mt-4 text-lg text-gray-600">This project is ready for AI code generation!</p>
-    </main>
-  )
-}',
-            'app/layout.tsx' => 'import type { Metadata } from \'next\'
-import \'./globals.css\'
-
-export const metadata: Metadata = {
-  title: \'' . ($project->name ?? 'AI Project') . '\',
-  description: \'AI Generated Next.js Project\',
-}
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  )
-}',
-            'app/globals.css' => '@import "tailwindcss";',
-        ];
-
-        // Create the files
-        foreach ($basicNextJS as $filePath => $content) {
-            $fullPath = "{$projectDir}/{$filePath}";
-            $dir = dirname($fullPath);
-
-            if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
-
-            file_put_contents($fullPath, $content);
-        }
-
-        // Create additional configuration files
-        $this->createNextJSConfigFiles($projectDir);
-        
-        // Create Dockerfile for Next.js project
-        $this->createDockerfile($projectDir);
-    }
-
-    /**
-     * Create Vite project files
-     */
-    private function createViteProject(string $projectDir, array $projectFiles): void
-    {
-        // Define protected files that should not be overwritten by AI
-        $protectedFiles = [
-            'vite.config.ts',
-            'package.json',
-            'tsconfig.json',
-            'tsconfig.node.json',
-            'tailwind.config.js',
-            'postcss.config.js',
-            '.eslintrc.cjs',
-            'Dockerfile',
-            '.dockerignore',
-            'docker-compose.yml'
-        ];
-
-        foreach ($projectFiles as $filePath => $content) {
-            // Skip protected files - we'll create them ourselves
-            if (in_array($filePath, $protectedFiles)) {
-                Log::info('Skipping protected file from AI generation', [
-                    'file' => $filePath,
-                    'reason' => 'Protected configuration file'
-                ]);
-                continue;
-            }
-
-            $fullPath = "{$projectDir}/{$filePath}";
-            $dir = dirname($fullPath);
-
-            if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
-
-            file_put_contents($fullPath, $content);
-        }
-
-        // BULLETPROOF PROTECTION: Delete any AI-generated config files that might have been written
-        foreach ($protectedFiles as $protectedFile) {
-            $protectedFilePath = "{$projectDir}/{$protectedFile}";
-            if (file_exists($protectedFilePath)) {
-                Log::warning('Deleting AI-generated protected file', [
-                    'file' => $protectedFile,
-                    'reason' => 'AI ignored protection instructions'
-                ]);
-                unlink($protectedFilePath);
-            }
-        }
-
-        // Create additional configuration files (these will overwrite any AI attempts)
-        $this->createViteConfigFiles($projectDir);
-        
-        // Create Dockerfile for Vite project
-        $this->createViteDockerfile($projectDir);
-    }
-
-    /**
-     * Create basic Vite fallback when no generated code is available
-     */
-    private function createBasicViteFallback(string $projectDir, Project $project): void
-    {
-        // Create a basic Vite + React + TypeScript structure
-        $basicVite = [
-            'package.json' => json_encode([
-                'name' => strtolower($project->slug ?? 'ai-project'),
-                'private' => true,
-                'version' => '0.0.0',
-                'type' => 'module',
-                'scripts' => [
-                    'dev' => 'vite',
-                    'build' => 'tsc && vite build',
-                    'lint' => 'eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0',
-                    'preview' => 'vite preview',
-                ],
-                'dependencies' => [
-                    'react' => '^18.2.0',
-                    'react-dom' => '^18.2.0',
-                ],
-                'devDependencies' => [
-                    '@types/react' => '^18.2.66',
-                    '@types/react-dom' => '^18.2.22',
-                    '@typescript-eslint/eslint-plugin' => '^7.2.0',
-                    '@typescript-eslint/parser' => '^7.2.0',
-                    '@vitejs/plugin-react' => '^4.2.1',
-                    'eslint' => '^8.57.0',
-                    'eslint-plugin-react-hooks' => '^4.6.0',
-                    'eslint-plugin-react-refresh' => '^0.4.6',
-                    'typescript' => '^5.2.2',
-                    'vite' => '^5.2.0',
-                    'tailwindcss' => '^3.4.0',
-                    'autoprefixer' => '^10.4.17',
-                    'postcss' => '^8.4.35',
-                ],
-            ], JSON_PRETTY_PRINT),
-            'index.html' => '<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>' . ($project->name ?? 'AI Project') . '</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>',
-            'src/main.tsx' => 'import React from \'react\'
-import ReactDOM from \'react-dom/client\'
-import App from \'./App.tsx\'
-import \'./index.css\'
-
-ReactDOM.createRoot(document.getElementById(\'root\')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)',
-            'src/App.tsx' => 'import { useState } from \'react\'
-import \'./App.css\'
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <div className="App">
-      <div className="card">
-        <h1>Welcome to Your Vite + React Project</h1>
-        <p>This project is ready for AI code generation!</p>
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-    </div>
-  )
-}
-
-export default App',
-            'src/App.css' => '.App {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.card {
-  padding: 2em;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  color: white;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-
-button:hover {
-  border-color: #646cff;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-code {
-  background-color: #1a1a1a;
-  padding: 0.2em 0.4em;
-  border-radius: 4px;
-  font-family: monospace;
-}',
-            'src/index.css' => '@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
-
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}',
-        ];
-
-        // Create the files
-        foreach ($basicVite as $filePath => $content) {
-            $fullPath = "{$projectDir}/{$filePath}";
-            $dir = dirname($fullPath);
-
-            if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
-
-            file_put_contents($fullPath, $content);
-        }
-
-        // Create additional configuration files
-        $this->createViteConfigFiles($projectDir);
-        
-        // Create Dockerfile for Vite project
-        $this->createViteDockerfile($projectDir);
-    }
-
-    /**
-     * Get default HTML content
-     */
-    private function getDefaultHtml(): string
-    {
-        return '<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Preview</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 2rem; text-align: center; }
-        .container { max-width: 600px; margin: 0 auto; }
-        h1 { color: #333; margin-bottom: 1rem; }
-        p { color: #666; line-height: 1.6; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Project Preview</h1>
-        <p>This is a preview of your project. Generate some content using AI prompts to see your website here!</p>
-    </div>
-</body>
-</html>';
-    }
-
-    /**
-     * Fix vite.config.ts to ensure it has correct server configuration for Docker
-     */
-    private function fixViteConfigForDocker(string $projectDir): void
-    {
-        $viteConfigPath = "{$projectDir}/vite.config.ts";
-        
-        if (file_exists($viteConfigPath)) {
-            // Read the current config
-            $currentConfig = file_get_contents($viteConfigPath);
-            
-            // Check if it already has the correct server configuration AND correct plugin
-            $hasCorrectServer = strpos($currentConfig, "host: '0.0.0.0'") !== false && 
-                               strpos($currentConfig, "port: 5173") !== false;
-            
-            // Check package.json to see what plugin should be used
-            $packageJsonPath = "{$projectDir}/package.json";
-            $packageJson = [];
-            if (file_exists($packageJsonPath)) {
-                $packageJson = json_decode(file_get_contents($packageJsonPath), true);
-            }
-            $devDeps = $packageJson['devDependencies'] ?? [];
-            $hasCorrectPlugin = false;
-            
-            if (isset($devDeps['@vitejs/plugin-react']) && strpos($currentConfig, '@vitejs/plugin-react') !== false) {
-                $hasCorrectPlugin = true;
-            } elseif (isset($devDeps['@vitejs/plugin-react-refresh']) && strpos($currentConfig, '@vitejs/plugin-react-refresh') !== false) {
-                $hasCorrectPlugin = true;
-            }
-            
-            if ($hasCorrectServer && $hasCorrectPlugin) {
-                // Already has correct configuration, no need to fix
-                return;
-            }
-            
-            // Determine which plugin to use based on what's installed
-            $useReactPlugin = isset($devDeps['@vitejs/plugin-react']);
-            $useReactRefreshPlugin = isset($devDeps['@vitejs/plugin-react-refresh']);
-            
-            if ($useReactPlugin) {
-                // Use @vitejs/plugin-react (newer Vite versions)
-                $correctConfig = <<<'TS'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-  },
-})
-TS;
-            } elseif ($useReactRefreshPlugin) {
-                // Use @vitejs/plugin-react-refresh (older Vite versions)
-                $correctConfig = <<<'TS'
-import { defineConfig } from 'vite'
-import reactRefresh from '@vitejs/plugin-react-refresh'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [reactRefresh()],
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-  },
-})
-TS;
-            } else {
-                // Fallback to basic config without plugins
-                $correctConfig = <<<'TS'
-import { defineConfig } from 'vite'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-  },
-})
-TS;
-            }
-            
-            // Write the correct configuration
-            $result = file_put_contents($viteConfigPath, $correctConfig);
-            
-            if ($result === false) {
-                // If we can't write due to permissions, try to fix ownership
-                $projectDir = dirname($viteConfigPath);
-                chmod($projectDir, 0755);
-                chmod($viteConfigPath, 0644);
-                
-                // Try again
-                $result = file_put_contents($viteConfigPath, $correctConfig);
-                
-                if ($result === false) {
-                    Log::error('Failed to fix vite.config.ts due to permission issues', [
-                        'project_dir' => $projectDir,
-                        'file' => $viteConfigPath,
-                    ]);
-                    return;
-                }
-            }
-            
-            Log::info('Fixed vite.config.ts for Docker compatibility', [
-                'project_dir' => $projectDir,
-            ]);
         }
     }
 }

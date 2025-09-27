@@ -47,12 +47,12 @@ Registration/Login → User Model → Session Management → Protected Routes
 ### 2. AI Website Generation Flow ✅ FULLY WORKING
 ```
 User Prompt → AI Provider Selection (Claude first, then OpenAI) → AI Analysis → 
-Website Type Detection → Stack Selection (Next.js or Vite) → Project Generation → 
+Website Type Detection → Stack Selection (Next.js, Vite, or SvelteKit) → Project Generation → 
 Code Storage → Configuration File Protection → Project Ready
 
 Current Status:
-- ✅ Claude Code working with Next.js and Vite + React
-- ✅ OpenAI working with Next.js and Vite + React  
+- ✅ Claude Code working with Next.js, Vite + React, and SvelteKit
+- ✅ OpenAI working with Next.js, Vite + React, and SvelteKit  
 - ✅ Token management optimized (4000 tokens)
 - ✅ Real AI generation (no more mock fallback)
 - ✅ Prompt following (AI follows user prompts exactly)
@@ -60,8 +60,8 @@ Current Status:
 
 ### 3. Docker Container Management Flow
 ```
-Project with Generated Code → Stack Detection (Next.js/Vite) → Docker Container Creation → 
-Development Server (Next.js/Vite) → Port Allocation → Live Preview URL → Real-time Website Preview
+Project with Generated Code → Stack Detection (Next.js/Vite/SvelteKit) → Docker Container Creation → 
+Development Server (Next.js/Vite/SvelteKit) → Port Allocation → Live Preview URL → Real-time Website Preview
 ```
 
 ### 4. AI Provider Fallback Pattern
@@ -71,7 +71,7 @@ Claude AI (Primary - 3.7x cheaper) → OpenAI (Backup) → Mock Generation (Fall
 
 ### 5. Docker Container Lifecycle Pattern
 ```
-Container Creation → Stack Detection → Dev Server (Next.js/Vite) → Port Mapping → 
+Container Creation → Stack Detection → Dev Server (Next.js/Vite/SvelteKit) → Port Mapping → 
 Live Preview → Health Monitoring → Resource Cleanup → Container Termination
 ```
 
@@ -118,7 +118,7 @@ Docker Configuration → Container Deployment → Live Preview
 
 ### 13. Multi-Stack Project Creation Pattern
 ```
-User Input → Stack Selection (Next.js/Vite) → Project Type Detection → 
+User Input → Stack Selection (Next.js/Vite/SvelteKit) → Project Type Detection → 
 Stack-Specific File Creation → Configuration Protection → Docker Setup → Live Preview
 ```
 
@@ -150,15 +150,15 @@ Stack-Specific File Creation → Configuration Protection → Docker Setup → L
 ## Docker Container Patterns
 
 ### 1. Container Architecture
-- **Base Image**: Node.js 18 Alpine for both Next.js and Vite projects
+- **Base Image**: Node.js 18 Alpine for Next.js, Vite, and SvelteKit projects
 - **Development Mode**: Uses `npm run dev` for live previews
 - **No nginx Required**: Built-in development servers handle everything
-- **Port Mapping**: Dynamic port allocation (Next.js: 3000, Vite: 5173, mapped to 8000+ range)
+- **Port Mapping**: Dynamic port allocation (Next.js: 3000, Vite: 5173, SvelteKit: 5173, mapped to 8000+ range)
 - **Stack Detection**: Automatic detection of project type for appropriate server configuration
 
 ### 2. Container Lifecycle Management
-- **Creation**: Dockerfile generation based on project type (Next.js or Vite)
-- **Startup**: Development server with hot reload (Next.js or Vite)
+- **Creation**: Dockerfile generation based on project type (Next.js, Vite, or SvelteKit)
+- **Startup**: Development server with hot reload (Next.js, Vite, or SvelteKit)
 - **Monitoring**: Health checks and resource usage tracking
 - **Cleanup**: Automatic resource cleanup and container removal
 

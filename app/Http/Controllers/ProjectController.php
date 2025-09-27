@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
 use App\Services\CollaborationService;
 use App\Services\DockerService;
+use App\Services\FilePermissionService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class ProjectController extends Controller
     ) {
         //
     }
+
     public function index(): Response
     {
         $projects = auth()->user()->projects()
@@ -66,53 +68,6 @@ class ProjectController extends Controller
     public function create(): Response
     {
         return Inertia::render('projects/Create');
-    }
-
-    public function sandbox(Project $project): Response
-    {
-        $this->authorize('view', $project);
-
-        $project->load(['containers', 'prompts' => function ($query) {
-            $query->latest()->limit(10);
-        }]);
-
-        // Get active container for preview URL
-        $activeContainer = $project->getActiveContainer();
-        $previewUrl = $activeContainer ? $activeContainer->preview_url : null;
-
-        // Determine project status
-        $status = 'draft';
-        if ($activeContainer) {
-            $status = $activeContainer->status === 'running' ? 'ready' : 'building';
-        } elseif ($project->containers->count() > 0) {
-            $status = 'building';
-        }
-
-        // Get project settings
-        $settings = $project->settings ?? [];
-        $stack = $settings['stack'] ?? 'Next.js';
-        $model = $settings['ai_model'] ?? 'Claude Code';
-
-        return Inertia::render('projects/Sandbox', [
-            'project' => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'description' => $project->description,
-                'stack' => $stack,
-                'model' => $model,
-                'status' => $status,
-                'preview_url' => $previewUrl,
-                'created_at' => $project->created_at,
-                'updated_at' => $project->updated_at,
-                'containers' => $project->containers,
-                'prompts' => $project->prompts,
-                'generated_code' => $project->generated_code,
-            ],
-            'flash' => [
-                'success' => session('success'),
-                'error' => session('error'),
-            ],
-        ]);
     }
 
     public function store(StoreProjectRequest $request)
@@ -160,10 +115,8 @@ class ProjectController extends Controller
         try {
             $projectDir = storage_path("app/projects/{$project->id}");
 
-            // Create project directory
-            if (!is_dir($projectDir)) {
-                mkdir($projectDir, 0755, true);
-            }
+            // Create project directory with proper permissions
+            FilePermissionService::createDirectory($projectDir, 0755);
 
             // Create project structure based on stack type
             $this->createProjectStructure($projectDir, $project);
@@ -197,9 +150,11 @@ class ProjectController extends Controller
     {
         $settings = $project->settings ?? [];
         $stack = $settings['stack'] ?? '';
-        
+
         if ($stack === 'vite' || $stack === 'Vite + React') {
             $this->createBasicViteProject($projectDir, $project);
+        } elseif ($stack === 'sveltekit' || $stack === 'SvelteKit') {
+            $this->createBasicSvelteKitProject($projectDir, $project);
         } else {
             // Default to Next.js for backward compatibility
             $this->createBasicNextJSProject($projectDir, $project);
@@ -285,7 +240,7 @@ EOT;
 
         // Create app directory structure
         $appDir = "{$projectDir}/app";
-        if (!is_dir($appDir)) {
+        if (! is_dir($appDir)) {
             mkdir($appDir, 0755, true);
         }
 
@@ -422,7 +377,7 @@ EOT;
 
         // Create src directory
         $srcDir = "{$projectDir}/src";
-        if (!is_dir($srcDir)) {
+        if (! is_dir($srcDir)) {
             mkdir($srcDir, 0755, true);
         }
 
@@ -588,12 +543,46 @@ EOT;
         // Check project type by looking for specific files
         if (file_exists("{$projectDir}/next.config.js") || file_exists("{$projectDir}/app")) {
             $this->createNextJSDockerfile($projectDir);
+        } elseif (file_exists("{$projectDir}/svelte.config.js") || file_exists("{$projectDir}/src/routes")) {
+            $this->createSvelteKitDockerfile($projectDir);
         } elseif (file_exists("{$projectDir}/vite.config.ts") || file_exists("{$projectDir}/vite.config.js")) {
             $this->createViteDockerfile($projectDir);
         } else {
-            // Default to HTML for projects without specific framework detection
-            $this->createHTMLDockerfile($projectDir);
+            // Default to Next.js for projects without specific framework detection
+            Log::warning('Could not detect specific framework, defaulting to Next.js Dockerfile', [
+                'project_dir' => $projectDir,
+            ]);
+            $this->createNextJSDockerfile($projectDir);
         }
+    }
+
+    /**
+     * Create Dockerfile for SvelteKit project
+     */
+    private function createSvelteKitDockerfile(string $projectDir): void
+    {
+        $dockerfile = <<<'EOT'
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 5173
+
+# Start development server
+CMD ["npm", "run", "dev"]
+EOT;
+
+        file_put_contents("{$projectDir}/Dockerfile", $dockerfile);
     }
 
     /**
@@ -625,86 +614,29 @@ EOT;
     }
 
     /**
-     * Create Dockerfile for HTML projects
-     */
-    private function createHTMLDockerfile(string $projectDir): void
-    {
-        $dockerfile = <<<'EOT'
-FROM nginx:alpine
-
-# Copy project files
-COPY . /usr/share/nginx/html/
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port 80
-EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
-EOT;
-        file_put_contents("{$projectDir}/Dockerfile", $dockerfile);
-    }
-
-    /**
-     * Create Dockerfile for Next.js project
+     * Create Dockerfile for Next.js project (Development Mode for Live Previews)
      */
     private function createNextJSDockerfile(string $projectDir): void
     {
         $dockerfile = <<<'EOT'
-FROM node:18-alpine AS base
+FROM node:18-alpine
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci
+# Copy package files
+COPY package.json ./
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Install dependencies
+RUN npm install
+
+# Copy source code
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN npm run build
-
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
+# Expose port
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-CMD ["node", "server.js"]
+# Start the development server for live previews
+CMD ["npm", "run", "dev"]
 EOT;
         file_put_contents("{$projectDir}/Dockerfile", $dockerfile);
     }
@@ -729,6 +661,336 @@ README.md
 .gitignore
 EOT;
         file_put_contents("{$projectDir}/.dockerignore", $dockerignore);
+    }
+
+    /**
+     * Create basic SvelteKit project structure
+     */
+    private function createBasicSvelteKitProject(string $projectDir, Project $project): void
+    {
+        // Create package.json
+        $packageJson = [
+            'name' => strtolower($project->slug),
+            'version' => '0.0.1',
+            'private' => true,
+            'type' => 'module',
+            'scripts' => [
+                'build' => 'vite build',
+                'dev' => 'vite dev --host 0.0.0.0',
+                'preview' => 'vite preview',
+                'check' => 'svelte-kit sync && svelte-check --tsconfig ./tsconfig.json',
+                'check:watch' => 'svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch',
+                'lint' => 'prettier --check . && eslint .',
+                'format' => 'prettier --write .',
+            ],
+            'devDependencies' => [
+                '@sveltejs/adapter-auto' => '^2.0.0',
+                '@sveltejs/kit' => '^1.20.4',
+                '@sveltejs/vite-plugin-svelte' => '^2.4.2',
+                '@typescript-eslint/eslint-plugin' => '^6.0.0',
+                '@typescript-eslint/parser' => '^6.0.0',
+                'eslint' => '^8.28.0',
+                'eslint-config-prettier' => '^8.5.0',
+                'eslint-plugin-svelte' => '^2.30.0',
+                'prettier' => '^2.8.0',
+                'prettier-plugin-svelte' => '^2.10.1',
+                'svelte' => '^4.0.5',
+                'svelte-check' => '^3.4.3',
+                'tslib' => '^2.4.1',
+                'typescript' => '^5.0.0',
+                'vite' => '^4.4.2',
+                'tailwindcss' => '^3.4.0',
+                'autoprefixer' => '^10.4.17',
+                'postcss' => '^8.4.35',
+            ],
+        ];
+
+        // Ensure project directory exists
+        if (! is_dir($projectDir)) {
+            mkdir($projectDir, 0755, true);
+        }
+
+        file_put_contents("{$projectDir}/package.json", json_encode($packageJson, JSON_PRETTY_PRINT));
+
+        // Create svelte.config.js
+        $svelteConfig = <<<'EOT'
+import adapter from '@sveltejs/adapter-auto';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+/** @type {import('@sveltejs/kit').Config} */
+const config = {
+	// Consult https://kit.svelte.dev/docs/integrations#preprocessors
+	// for more information about preprocessors
+	preprocess: vitePreprocess(),
+
+	kit: {
+		// adapter-auto only supports some environments, see https://kit.svelte.dev/docs/adapter-auto for a list.
+		// If your environment is not supported or you settled on a specific environment, switch out the adapter.
+		// See https://kit.svelte.dev/docs/adapters for more information about adapters.
+		adapter: adapter()
+	}
+};
+
+export default config;
+EOT;
+        file_put_contents("{$projectDir}/svelte.config.js", $svelteConfig);
+
+        // Create vite.config.js
+        $viteConfig = <<<'EOT'
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+	plugins: [sveltekit()],
+	server: {
+		host: '0.0.0.0',
+		port: 5173
+	}
+});
+EOT;
+        file_put_contents("{$projectDir}/vite.config.js", $viteConfig);
+
+        // Create tsconfig.json
+        $tsconfig = [
+            'extends' => './.svelte-kit/tsconfig.json',
+            'compilerOptions' => [
+                'allowJs' => true,
+                'checkJs' => true,
+                'esModuleInterop' => true,
+                'forceConsistentCasingInFileNames' => true,
+                'resolveJsonModule' => true,
+                'skipLibCheck' => true,
+                'sourceMap' => true,
+                'strict' => true,
+            ],
+        ];
+        file_put_contents("{$projectDir}/tsconfig.json", json_encode($tsconfig, JSON_PRETTY_PRINT));
+
+        // Create src directory
+        $srcDir = "{$projectDir}/src";
+        if (! is_dir($srcDir)) {
+            mkdir($srcDir, 0755, true);
+        }
+
+        // Create src/app.html
+        $appHtml = <<<'EOT'
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
+EOT;
+        file_put_contents("{$srcDir}/app.html", $appHtml);
+
+        // Create src/app.css
+        $appCss = <<<'EOT'
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+	font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
+
+	color-scheme: light dark;
+	color: rgba(255, 255, 255, 0.87);
+	background-color: #242424;
+
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	-webkit-text-size-adjust: 100%;
+}
+
+a {
+	font-weight: 500;
+	color: #646cff;
+	text-decoration: inherit;
+}
+a:hover {
+	color: #535bf2;
+}
+
+body {
+	margin: 0;
+	display: flex;
+	place-items: center;
+	min-width: 320px;
+	min-height: 100vh;
+}
+
+h1 {
+	font-size: 3.2em;
+	line-height: 1.1;
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		color: #213547;
+		background-color: #ffffff;
+	}
+	a:hover {
+		color: #747bff;
+	}
+	button {
+		background-color: #f9f9f9;
+	}
+}
+EOT;
+        file_put_contents("{$srcDir}/app.css", $appCss);
+
+        // Create src/routes directory
+        $routesDir = "{$srcDir}/routes";
+        if (! is_dir($routesDir)) {
+            mkdir($routesDir, 0755, true);
+        }
+
+        // Create src/routes/+layout.svelte
+        $layoutSvelte = <<<'EOT'
+<script>
+	import '../app.css';
+</script>
+
+<slot />
+EOT;
+        file_put_contents("{$routesDir}/+layout.svelte", $layoutSvelte);
+
+        // Create src/routes/+page.svelte
+        $pageSvelte = <<<'EOT'
+<script lang="ts">
+	let count = 0;
+</script>
+
+<svelte:head>
+	<title>AI Generated SvelteKit Project</title>
+</svelte:head>
+
+<main class="max-w-4xl mx-auto p-8 text-center">
+	<div class="card p-8">
+		<h1 class="text-4xl font-bold mb-4">Welcome to Your SvelteKit Project</h1>
+		<p class="mb-6">This project is ready for AI code generation!</p>
+		<button 
+			class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+			on:click={() => count++}
+		>
+			count is {count}
+		</button>
+		<p class="mt-4">
+			Edit <code class="bg-gray-800 px-2 py-1 rounded">src/routes/+page.svelte</code> and save to test HMR
+		</p>
+	</div>
+</main>
+
+<style>
+	.card {
+		padding: 2em;
+	}
+</style>
+EOT;
+        file_put_contents("{$routesDir}/+page.svelte", $pageSvelte);
+
+        // Create static directory
+        $staticDir = "{$projectDir}/static";
+        if (! is_dir($staticDir)) {
+            mkdir($staticDir, 0755, true);
+        }
+
+        // Create static/favicon.png placeholder
+        file_put_contents("{$staticDir}/favicon.png", '');
+
+        // Create .gitignore
+        $gitignore = <<<'EOT'
+.DS_Store
+node_modules
+/build
+/.svelte-kit
+/package
+.env
+.env.*
+!.env.example
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+EOT;
+        file_put_contents("{$projectDir}/.gitignore", $gitignore);
+
+        // Create .eslintrc.cjs
+        $eslintrc = <<<'EOT'
+module.exports = {
+	root: true,
+	extends: [
+		'eslint:recommended',
+		'@typescript-eslint/recommended',
+		'prettier'
+	],
+	parser: '@typescript-eslint/parser',
+	plugins: ['svelte3', '@typescript-eslint'],
+	overrides: [
+		{
+			files: ['*.svelte'],
+			processor: 'svelte3/svelte3'
+		}
+	],
+	settings: {
+		'svelte3/typescript': () => require('typescript')
+	},
+	parserOptions: {
+		sourceType: 'module',
+		ecmaVersion: 2020
+	},
+	env: {
+		browser: true,
+		es2017: true,
+		node: true
+	}
+};
+EOT;
+        file_put_contents("{$projectDir}/.eslintrc.cjs", $eslintrc);
+
+        // Create .prettierrc
+        $prettierrc = <<<'EOT'
+{
+	"useTabs": true,
+	"singleQuote": true,
+	"trailingComma": "none",
+	"printWidth": 100,
+	"plugins": ["prettier-plugin-svelte"],
+	"overrides": [{ "files": "*.svelte", "options": { "parser": "svelte" } }]
+}
+EOT;
+        file_put_contents("{$projectDir}/.prettierrc", $prettierrc);
+
+        // Create postcss.config.js
+        $postcssConfig = <<<'EOT'
+export default {
+	plugins: {
+		tailwindcss: {},
+		autoprefixer: {},
+	},
+};
+EOT;
+        file_put_contents("{$projectDir}/postcss.config.js", $postcssConfig);
+
+        // Create tailwind.config.js
+        $tailwindConfig = <<<'EOT'
+/** @type {import('tailwindcss').Config} */
+export default {
+	content: ['./src/**/*.{html,js,svelte,ts}'],
+	theme: {
+		extend: {},
+	},
+	plugins: [],
+};
+EOT;
+        file_put_contents("{$projectDir}/tailwind.config.js", $tailwindConfig);
     }
 
     /**
@@ -774,7 +1036,7 @@ EOT;
             'description' => $request->description,
             'settings' => $request->settings ?? $project->settings,
         ]);
-        
+
         // Track project changes
         $newData = $project->fresh()->toArray();
         $changes = [];
@@ -807,7 +1069,7 @@ EOT;
         $this->authorize('view', $project);
 
         $newProject = $project->replicate();
-        $newProject->name = $project->name . ' (Copy)';
+        $newProject->name = $project->name.' (Copy)';
         $newProject->slug = Str::slug($newProject->name);
         $newProject->status = 'draft';
         $newProject->preview_url = null;
@@ -824,8 +1086,8 @@ EOT;
     public function checkName(Request $request)
     {
         $name = $request->query('name');
-        
-        if (!$name) {
+
+        if (! $name) {
             return response()->json(['exists' => false]);
         }
 
@@ -844,102 +1106,7 @@ EOT;
             'success' => true,
             'project' => $project->load(['containers', 'prompts' => function ($query) {
                 $query->latest()->limit(5);
-            }])
+            }]),
         ]);
-    }
-
-    public function verifySetup(Project $project)
-    {
-        // Check if user owns the project
-        if ($project->user_id !== auth()->id()) {
-            if (request()->header('X-Inertia')) {
-                return redirect()->back()->withErrors(['error' => 'Unauthorized access to project']);
-            }
-            return response()->json(['success' => false, 'message' => 'Unauthorized access to project'], 403);
-        }
-
-        $verification = [
-            'database_exists' => false,
-            'folder_exists' => false,
-            'required_files' => [],
-            'all_files_present' => false,
-            'overall_status' => 'failed'
-        ];
-
-        try {
-            // 1. Check if project exists in database
-            $verification['database_exists'] = $project->exists;
-
-            // 2. Check if project folder exists
-            $projectPath = storage_path("app/projects/{$project->id}");
-            $verification['folder_exists'] = is_dir($projectPath);
-
-            // 3. Check for required files
-            $requiredFiles = [
-                'package.json',
-                'next.config.js',
-                'tsconfig.json',
-                'Dockerfile',
-                'docker-compose.yml',
-                '.dockerignore'
-            ];
-
-            $filesPresent = [];
-            foreach ($requiredFiles as $file) {
-                $filePath = $projectPath . '/' . $file;
-                $filesPresent[$file] = file_exists($filePath);
-            }
-
-            $verification['required_files'] = $filesPresent;
-            $verification['all_files_present'] = !in_array(false, $filesPresent);
-
-            // 4. Overall status
-            if ($verification['database_exists'] && $verification['folder_exists'] && $verification['all_files_present']) {
-                $verification['overall_status'] = 'success';
-            } elseif ($verification['database_exists'] && $verification['folder_exists']) {
-                $verification['overall_status'] = 'partial';
-            } else {
-                $verification['overall_status'] = 'failed';
-            }
-
-            // For Inertia requests, return back with verification data
-            if (request()->header('X-Inertia')) {
-                return redirect()->back()->with(['verification' => $verification]);
-            }
-
-            // For AJAX requests, return JSON
-            if (request()->header('X-Requested-With') === 'XMLHttpRequest') {
-                return response()->json([
-                    'success' => true,
-                    'verification' => $verification
-                ]);
-            }
-
-            return response()->json(['verification' => $verification]);
-
-        } catch (\Exception $e) {
-            Log::error('Failed to verify project setup', [
-                'project_id' => $project->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            $verification['error'] = $e->getMessage();
-
-            // For Inertia requests, return back with error
-            if (request()->header('X-Inertia')) {
-                return redirect()->back()->withErrors(['error' => 'Verification failed: ' . $e->getMessage()]);
-            }
-
-            // For AJAX requests, return JSON
-            if (request()->header('X-Requested-With') === 'XMLHttpRequest') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Verification failed: ' . $e->getMessage(),
-                    'verification' => $verification
-                ], 500);
-            }
-
-            return response()->json(['verification' => $verification], 500);
-        }
     }
 }
