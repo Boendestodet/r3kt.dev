@@ -112,6 +112,73 @@ class ProjectVerificationController extends Controller
         $stack = $project->settings['stack'] ?? 'nextjs';
 
         switch (strtolower($stack)) {
+            case 'astro':
+                return [
+                    'package.json',
+                    'astro.config.mjs',
+                    'tsconfig.json',
+                    'src/pages/index.astro',
+                    'src/layouts/Layout.astro',
+                    'src/components/Header.astro',
+                    'src/components/Footer.astro',
+                    'src/styles/global.css',
+                    'Dockerfile',
+                    'docker-compose.yml',
+                    '.dockerignore',
+                ];
+            case 'nuxt3':
+                return [
+                    'package.json',
+                    'nuxt.config.ts',
+                    'tsconfig.json',
+                    'app.vue',
+                    'pages/index.vue',
+                    'components/Header.vue',
+                    'components/Footer.vue',
+                    'assets/css/main.css',
+                    'Dockerfile',
+                    'docker-compose.yml',
+                    '.dockerignore',
+                ];
+            case 'nodejs-express':
+                return [
+                    'package.json',
+                    'tsconfig.json',
+                    '.env',
+                    'src/app.ts',
+                    'src/routes/index.ts',
+                    'src/routes/api.ts',
+                    'src/middleware/cors.ts',
+                    'src/middleware/errorHandler.ts',
+                    'src/types/index.ts',
+                    'src/utils/logger.ts',
+                    'Dockerfile',
+                    'docker-compose.yml',
+                    '.dockerignore',
+                ];
+            case 'python-fastapi':
+                return [
+                    'requirements.txt',
+                    'pyproject.toml',
+                    '.env',
+                    'main.py',
+                    'app/__init__.py',
+                    'app/api/__init__.py',
+                    'app/api/routes.py',
+                    'app/api/dependencies.py',
+                    'app/core/__init__.py',
+                    'app/core/config.py',
+                    'app/core/security.py',
+                    'app/models/__init__.py',
+                    'app/models/schemas.py',
+                    'app/services/__init__.py',
+                    'app/services/database.py',
+                    'app/utils/__init__.py',
+                    'app/utils/logger.py',
+                    'Dockerfile',
+                    'docker-compose.yml',
+                    '.dockerignore',
+                ];
             case 'vite-react':
                 return [
                     'package.json',

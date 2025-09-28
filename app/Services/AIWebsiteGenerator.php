@@ -136,10 +136,15 @@ class AIWebsiteGenerator
         // Normalize and map stack names with flexible matching
         // Order matters - more specific patterns first
         $stackMappings = [
-            'vite-vue' => ['vite + vue', 'vite + vue + typescript', 'vite vue'],
-            'vite-react' => ['vite + react', 'vite + react + typescript', 'vite'],
+            'astro' => ['astro', 'astro + typescript', 'astro typescript'],
+            'nodejs-express' => ['nodejs-express', 'node.js + express', 'nodejs + express', 'express', 'express.js'],
+            'python-fastapi' => ['python-fastapi', 'python + fastapi', 'python + fastapi + async', 'fastapi', 'fastapi + async'],
+            'nuxt3' => ['nuxt3', 'nuxt 3', 'nuxt + typescript', 'nuxt typescript'],
+            'vite-vue' => ['vite-vue', 'vite + vue', 'vite + vue + typescript', 'vite vue'],
+            'vite-react' => ['vite-react', 'vite + react', 'vite + react + typescript'],
             'nextjs' => ['next.js', 'nextjs + react', 'nextjs', 'next'],
             'sveltekit' => ['svelte + kit', 'sveltekit', 'svelte'],
+            'vite' => ['vite'], // Generic vite fallback
         ];
 
         // Check for partial matches
@@ -147,6 +152,11 @@ class AIWebsiteGenerator
             foreach ($patterns as $pattern) {
                 if (str_contains($stack, $pattern)) {
                     Log::info("Detected {$type} project type from stack: {$stack}");
+
+                    // If it's just 'vite', default to 'vite-react'
+                    if ($type === 'vite') {
+                        return 'vite-react';
+                    }
 
                     return $type;
                 }

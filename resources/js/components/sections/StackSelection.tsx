@@ -25,8 +25,8 @@ const modernWebStacks: Stack[] = [
   { name: "Vite + React", description: "Vite + React + TypeScript", hot: true, comingSoon: false },
   { name: "SvelteKit", description: "SvelteKit with TypeScript", hot: false, comingSoon: false },
   { name: "Vite + Vue", description: "Vite + Vue + TypeScript", hot: true, comingSoon: false },
-  { name: "Astro", description: "Astro with TypeScript", hot: false, comingSoon: true },
-  { name: "Nuxt 3", description: "Nuxt 3 with TypeScript", hot: false, comingSoon: true },
+  { name: "Astro", description: "Astro with TypeScript", hot: false, comingSoon: false },
+  { name: "Nuxt 3", description: "Nuxt 3 with TypeScript", hot: false, comingSoon: false },
 ]
 
 const backendStacks: Stack[] = [

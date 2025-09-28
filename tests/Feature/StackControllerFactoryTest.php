@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\AstroController;
+use App\Http\Controllers\ExpressController;
+use App\Http\Controllers\FastAPIController;
 use App\Http\Controllers\NextJSController;
+use App\Http\Controllers\NuxtController;
 use App\Http\Controllers\SvelteKitController;
 use App\Http\Controllers\ViteReactController;
 use App\Http\Controllers\ViteVueController;
@@ -14,6 +18,17 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->factory = app(StackControllerFactory::class);
+});
+
+it('returns AstroController for astro project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'astro'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(AstroController::class);
 });
 
 it('returns NextJSController for nextjs project type', function () {
@@ -216,4 +231,147 @@ it('handles projects with empty settings array', function () {
 
     $projectType = $this->factory->getProjectType($project);
     expect($projectType)->toBe('nextjs');
+});
+
+it('correctly identifies astro project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'astro'],
+    ]);
+
+    expect($this->factory->isProjectType($project, 'astro'))->toBeTrue();
+    expect($this->factory->isProjectType($project, 'nextjs'))->toBeFalse();
+    expect($this->factory->isProjectType($project, 'vite-react'))->toBeFalse();
+});
+
+it('returns NuxtController for nuxt3 project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'nuxt3'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(NuxtController::class);
+});
+
+it('returns NuxtController for nuxt 3 project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'nuxt 3'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(NuxtController::class);
+});
+
+it('returns NuxtController for nuxt + typescript project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'nuxt + typescript'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(NuxtController::class);
+});
+
+it('correctly identifies nuxt3 project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'nuxt3'],
+    ]);
+
+    expect($this->factory->isProjectType($project, 'nuxt3'))->toBeTrue();
+    expect($this->factory->isProjectType($project, 'nextjs'))->toBeFalse();
+    expect($this->factory->isProjectType($project, 'vite-react'))->toBeFalse();
+});
+
+it('returns ExpressController for nodejs-express project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'nodejs-express'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(ExpressController::class);
+});
+
+it('returns ExpressController for node.js + express project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'node.js + express'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(ExpressController::class);
+});
+
+it('returns ExpressController for express project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'express'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(ExpressController::class);
+});
+
+it('correctly identifies nodejs-express project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'nodejs-express'],
+    ]);
+
+    expect($this->factory->isProjectType($project, 'nodejs-express'))->toBeTrue();
+    expect($this->factory->isProjectType($project, 'nextjs'))->toBeFalse();
+    expect($this->factory->isProjectType($project, 'vite-react'))->toBeFalse();
+});
+
+it('returns FastAPIController for python-fastapi project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'python-fastapi'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(FastAPIController::class);
+});
+
+it('returns FastAPIController for python + fastapi project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'python + fastapi'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(FastAPIController::class);
+});
+
+it('returns FastAPIController for fastapi project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'fastapi'],
+    ]);
+
+    $controller = $this->factory->getController($project);
+
+    expect($controller)->toBeInstanceOf(FastAPIController::class);
+});
+
+it('correctly identifies python-fastapi project type', function () {
+    $project = Project::factory()->create([
+        'user_id' => $this->user->id,
+        'settings' => ['stack' => 'python-fastapi'],
+    ]);
+
+    expect($this->factory->isProjectType($project, 'python-fastapi'))->toBeTrue();
+    expect($this->factory->isProjectType($project, 'nextjs'))->toBeFalse();
+    expect($this->factory->isProjectType($project, 'vite-react'))->toBeFalse();
 });

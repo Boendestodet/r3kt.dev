@@ -193,6 +193,14 @@ class DockerService
     private function getInternalPort(string $projectDir): string
     {
         // Try to determine project type from files
+        if (file_exists("{$projectDir}/astro.config.mjs")) {
+            return '4321'; // Astro
+        }
+
+        if (file_exists("{$projectDir}/nuxt.config.ts")) {
+            return '3000'; // Nuxt 3
+        }
+
         if (file_exists("{$projectDir}/next.config.js") || file_exists("{$projectDir}/app")) {
             return '3000'; // Next.js
         }
@@ -203,6 +211,22 @@ class DockerService
 
         if (file_exists("{$projectDir}/svelte.config.js")) {
             return '5173'; // SvelteKit
+        }
+
+        // Check for Express.js project (look for src/app.ts and package.json with express dependency)
+        if (file_exists("{$projectDir}/src/app.ts") && file_exists("{$projectDir}/package.json")) {
+            $packageJson = json_decode(file_get_contents("{$projectDir}/package.json"), true);
+            if (isset($packageJson['dependencies']['express'])) {
+                return '3000'; // Express.js
+            }
+        }
+
+        // Check for FastAPI project (look for main.py and requirements.txt with fastapi dependency)
+        if (file_exists("{$projectDir}/main.py") && file_exists("{$projectDir}/requirements.txt")) {
+            $requirements = file_get_contents("{$projectDir}/requirements.txt");
+            if (str_contains($requirements, 'fastapi')) {
+                return '8000'; // FastAPI
+            }
         }
 
         // Default to Next.js port

@@ -39,7 +39,7 @@ interface Props {
   }
 }
 
-export default function VibecodeSandboxPage({ projects }: Props) {
+export default function R3ktSandboxPage({ projects }: Props) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null) // Changed to null initially
   const [selectedStack, setSelectedStack] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("Modern Web")
@@ -101,7 +101,7 @@ export default function VibecodeSandboxPage({ projects }: Props) {
     // Fallback: try to get from cookies
     if (!csrfToken) {
       const cookies = document.cookie.split(';')
-      for (let cookie of cookies) {
+      for (const cookie of cookies) {
         const [name, value] = cookie.trim().split('=')
         if (name === 'XSRF-TOKEN') {
           csrfToken = decodeURIComponent(value)
@@ -122,6 +122,33 @@ export default function VibecodeSandboxPage({ projects }: Props) {
     }
     
     return csrfToken
+  }
+
+  // Helper function to map frontend stack names to backend identifiers
+  const getStackIdentifier = (displayName: string): string => {
+    const stackMapping: { [key: string]: string } = {
+      'Next.js': 'nextjs',
+      'Vite + React': 'vite-react',
+      'Vite + Vue': 'vite-vue',
+      'SvelteKit': 'sveltekit',
+      'Astro': 'astro',
+      'Nuxt 3': 'nuxt3',
+      'Node.js + Express': 'nodejs-express',
+      'Python + FastAPI': 'python-fastapi',
+      'Go + Gin': 'go-gin',
+      'Rust + Axum': 'rust-axum',
+      'Unity + C#': 'unity-csharp',
+      'Unreal + C++': 'unreal-cpp',
+      'Godot + GDScript': 'godot-gdscript',
+      'PHP + Laravel': 'php-laravel',
+      'Java + Spring': 'java-spring',
+      'C# + .NET': 'csharp-dotnet',
+      'Jekyll': 'jekyll',
+      'Hugo': 'hugo',
+      '11ty': 'eleventy'
+    }
+    
+    return stackMapping[displayName] || displayName.toLowerCase().replace(/\s+/g, '-')
   }
 
   // Persist creation state to localStorage
@@ -359,7 +386,7 @@ export default function VibecodeSandboxPage({ projects }: Props) {
       description: projectDescription || `AI-generated project: ${projectPrompt}`,
       settings: {
         ai_model: selectedModel,
-        stack: selectedStack,
+        stack: getStackIdentifier(selectedStack!),
         auto_deploy: true
       }
     })
@@ -370,7 +397,7 @@ export default function VibecodeSandboxPage({ projects }: Props) {
       description: projectDescription || `AI-generated project: ${projectPrompt}`,
       settings: {
         ai_model: selectedModel,
-        stack: selectedStack,
+        stack: getStackIdentifier(selectedStack!),
         auto_deploy: true
       }
     }, {
@@ -384,7 +411,7 @@ export default function VibecodeSandboxPage({ projects }: Props) {
           description: projectDescription || `AI-generated project: ${projectPrompt}`,
           settings: {
             ai_model: selectedModel,
-            stack: selectedStack,
+            stack: getStackIdentifier(selectedStack!),
             auto_deploy: true
           }
         })
@@ -873,7 +900,7 @@ export default function VibecodeSandboxPage({ projects }: Props) {
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-4xl font-mono tracking-wide bg-gradient-to-r from-[#F59E0B] via-[#EA580C] to-[#F59E0B] bg-clip-text text-transparent font-bold">
-                    VIBECODE SANDBOX
+                    R3KT SANDBOX
                   </h1>
                   <p className="text-slate-400 text-lg font-medium">Build, Deploy, and Scale Your Ideas</p>
                 </div>

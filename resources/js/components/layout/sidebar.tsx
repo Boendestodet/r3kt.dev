@@ -134,7 +134,7 @@ export const Sidebar = ({
           </div>
           {!sidebarCollapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-white text-xl tracking-tight">Vibecode</span>
+              <span className="font-bold text-white text-xl tracking-tight">R3KT</span>
               <span className="text-xs text-slate-400 font-medium">Development Platform</span>
             </div>
           )}
