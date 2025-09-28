@@ -131,7 +131,44 @@ class DockerService
         ]);
 
         // Parse the project data
-        $projectFiles = json_decode($projectData, true);
+        $projectDataParsed = json_decode($projectData, true);
+        
+        // Handle nested JSON structure from AI generation
+        $projectFiles = null;
+        if ($projectDataParsed && is_array($projectDataParsed)) {
+            // Check if we have a nested structure with 'result' field
+            if (isset($projectDataParsed['result']) && is_string($projectDataParsed['result'])) {
+                // The result field contains JSON as a string, parse it
+                $resultString = $projectDataParsed['result'];
+                
+                // Remove markdown code blocks if present
+                if (str_starts_with(trim($resultString), '```json')) {
+                    $resultString = preg_replace('/^```json\s*/', '', $resultString);
+                    $resultString = preg_replace('/\s*```$/', '', $resultString);
+                }
+                
+                $projectFiles = json_decode($resultString, true);
+                Log::info('Extracted project files from nested result field', [
+                    'project_id' => $container->project->id,
+                    'files_count' => $projectFiles ? count($projectFiles) : 0,
+                    'result_length' => strlen($resultString),
+                ]);
+            } elseif (isset($projectDataParsed['result']) && is_array($projectDataParsed['result'])) {
+                // The result field is already an array
+                $projectFiles = $projectDataParsed['result'];
+                Log::info('Using project files from result array', [
+                    'project_id' => $container->project->id,
+                    'files_count' => count($projectFiles),
+                ]);
+            } else {
+                // Direct project files structure
+                $projectFiles = $projectDataParsed;
+                Log::info('Using direct project files structure', [
+                    'project_id' => $container->project->id,
+                    'files_count' => count($projectFiles),
+                ]);
+            }
+        }
 
         if ($projectFiles && is_array($projectFiles)) {
             // Use stack controller to create project files

@@ -75,11 +75,11 @@ class CursorAIService
     private function executeCursorCommand(string $prompt, string $projectType): array
     {
         try {
-            // Add more specific instructions for JSON output
-            $enhancedPrompt = $prompt . "\n\nIMPORTANT: You must respond with ONLY valid JSON. Do not include any explanations, descriptions, or additional text. Start your response with { and end with }. The JSON should contain the exact file contents as strings.";
+            // Create a more explicit prompt that forces JSON output
+            $enhancedPrompt = $prompt . "\n\nCRITICAL: You must respond with ONLY a valid JSON object containing the file contents. Do NOT provide explanations, descriptions, or any other text. Do NOT use code blocks or markdown. Return ONLY the raw JSON object with the exact file contents as strings. Example format: {\"app/layout.tsx\": \"export default function RootLayout...\", \"app/page.tsx\": \"export default function HomePage...\"}";
             
-            // Execute cursor-agent command with the enhanced prompt
-            $process = Process::run([
+            // Execute cursor-agent command with the enhanced prompt and longer timeout
+            $process = Process::timeout(120)->run([
                 'cursor-agent',
                 '--print',
                 '--output-format', 'json',
@@ -148,6 +148,35 @@ class CursorAIService
         // First, try to parse the entire output as JSON (in case it's already clean)
         $decoded = json_decode($output, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            // If it's a Cursor CLI response with a result field, extract the result
+            if (isset($decoded['result']) && is_string($decoded['result'])) {
+                // The result field contains the actual content - try to parse it as JSON
+                $resultContent = $decoded['result'];
+                
+                // Try to find JSON within the result content
+                $jsonPatterns = [
+                    '/\{.*\}/s',  // Any JSON object
+                    '/```json\s*(\{.*?\})\s*```/s',  // JSON in code blocks
+                ];
+                
+                foreach ($jsonPatterns as $pattern) {
+                    if (preg_match($pattern, $resultContent, $matches)) {
+                        $jsonString = $matches[1] ?? $matches[0];
+                        $jsonString = trim($jsonString);
+                        $jsonString = stripslashes($jsonString);
+                        
+                        $jsonDecoded = json_decode($jsonString, true);
+                        if (json_last_error() === JSON_ERROR_NONE && is_array($jsonDecoded)) {
+                            return $jsonDecoded;
+                        }
+                    }
+                }
+                
+                // If no JSON found in result, return null (Cursor CLI didn't follow instructions)
+                return null;
+            }
+            
+            // If it's already the file contents JSON, return it
             return $decoded;
         }
         
