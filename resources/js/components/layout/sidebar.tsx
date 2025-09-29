@@ -26,6 +26,13 @@ interface SidebarProps {
   searchQuery: string
   showCreditsDropdown: boolean
   projects: Project[]
+  balanceInfo: {
+    balance: number
+    formatted_balance: string
+    total_spent: number
+    formatted_total_spent: string
+    can_generate: boolean
+  }
   onToggleCollapse: () => void
   onToggleHidden: () => void
   onSearchChange: (query: string) => void
@@ -40,6 +47,7 @@ export const Sidebar = ({
   searchQuery,
   showCreditsDropdown,
   projects,
+  balanceInfo,
   onToggleCollapse,
   onToggleHidden,
   onSearchChange,
@@ -292,7 +300,7 @@ export const Sidebar = ({
                     <span className="text-xs font-bold text-white">$</span>
                   </div>
                   <div className="text-left">
-                    <span className="text-sm font-semibold text-white block">$1.43 credits</span>
+                    <span className="text-sm font-semibold text-white block">{balanceInfo.formatted_balance} credits</span>
                     <span className="text-xs text-slate-400">Available balance</span>
                   </div>
                 </div>
@@ -305,18 +313,34 @@ export const Sidebar = ({
                   <div className="space-y-4 text-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">Available:</span>
-                      <span className="text-emerald-400 font-semibold">$1.43</span>
+                      <span className="text-emerald-400 font-semibold">{balanceInfo.formatted_balance}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Used this month:</span>
-                      <span className="text-slate-300 font-semibold">$8.57</span>
+                      <span className="text-slate-400">Total spent:</span>
+                      <span className="text-slate-300 font-semibold">{balanceInfo.formatted_total_spent}</span>
                     </div>
                     <div className="w-full bg-slate-700 rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-emerald-400 to-green-500 h-2 rounded-full"
-                        style={{ width: "14%" }}
+                        className={`h-2 rounded-full ${balanceInfo.can_generate ? 'bg-gradient-to-r from-emerald-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'}`}
+                        style={{ width: `${Math.min((balanceInfo.balance / 10) * 100, 100)}%` }}
                       ></div>
                     </div>
+                    {!balanceInfo.can_generate && (
+                      <div className="p-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0">
+                            <svg className="h-4 w-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-2">
+                            <p className="text-xs text-yellow-300">
+                              Insufficient balance for AI generation
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <hr className="border-slate-700" />
                     <button className="w-full text-left text-orange-400 hover:text-orange-300 transition-colors font-medium">
                       Add credits →

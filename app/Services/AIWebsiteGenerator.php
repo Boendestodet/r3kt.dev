@@ -14,7 +14,8 @@ class AIWebsiteGenerator
         private ClaudeAIService $claudeAIService,
         private GeminiAIService $geminiAIService,
         private CursorAIService $cursorAIService,
-        private DockerService $dockerService
+        private DockerService $dockerService,
+        private BalanceService $balanceService
     ) {
         //
     }
@@ -34,6 +35,31 @@ class AIWebsiteGenerator
             if (empty($providers)) {
                 Log::warning('No AI providers configured, falling back to mock generation');
                 $this->generateWithFallback($prompt);
+
+                return;
+            }
+
+            // Check if user has sufficient balance for AI generation
+            $user = $prompt->project->user;
+            $canAfford = false;
+            foreach ($providers as $provider) {
+                if ($this->balanceService->canAffordGeneration($user, $provider['name'])) {
+                    $canAfford = true;
+                    break;
+                }
+            }
+
+            if (! $canAfford) {
+                Log::warning('User has insufficient balance for AI generation', [
+                    'user_id' => $user->id,
+                    'balance' => $user->balance,
+                ]);
+
+                $prompt->update([
+                    'status' => 'failed',
+                    'response' => json_encode(['error' => 'Insufficient balance. Please add credits to your account to generate projects.']),
+                    'processed_at' => now(),
+                ]);
 
                 return;
             }
@@ -64,6 +90,20 @@ class AIWebsiteGenerator
                             'ai_provider' => $provider['name'],
                         ],
                     ]);
+
+                    // Deduct cost from user's balance
+                    Log::info('About to deduct balance', [
+                        'user_id' => $prompt->project->user->id,
+                        'provider' => $provider['name'],
+                        'tokens_used' => $result['tokens_used'] ?? 'not_set',
+                        'result_keys' => array_keys($result),
+                    ]);
+
+                    $this->balanceService->deductGenerationCost(
+                        $prompt->project->user,
+                        $provider['name'],
+                        $result['tokens_used'] ?? 1000
+                    );
 
                     // Update the project with the generated project
                     $prompt->project->update([
@@ -96,6 +136,7 @@ class AIWebsiteGenerator
                             'response' => json_encode(['error' => "Your selected AI model '{$preferredModel}' failed to generate the website. Please try again or select a different model."]),
                             'processed_at' => now(),
                         ]);
+
                         return;
                     }
 
@@ -153,9 +194,10 @@ class AIWebsiteGenerator
                 // For specific patterns like 'vite-vue', 'vite-react', use exact matching
                 if (str_contains($pattern, '-') && $stack === $pattern) {
                     Log::info("Detected {$type} project type from exact stack match: {$stack}");
+
                     return $type;
                 }
-                
+
                 // For other patterns, use partial matching
                 if (str_contains($stack, $pattern)) {
                     Log::info("Detected {$type} project type from stack: {$stack}");
@@ -187,13 +229,13 @@ class AIWebsiteGenerator
     {
         $settings = $project->settings ?? [];
         $preferredModel = $settings['ai_model'] ?? null;
-        
+
         Log::info('User preferred model', [
             'project_id' => $project->id,
             'preferred_model' => $preferredModel,
             'settings' => $settings,
         ]);
-        
+
         return $preferredModel;
     }
 
@@ -217,15 +259,16 @@ class AIWebsiteGenerator
     {
         $providers = [];
         $modelMapping = $this->getModelServiceMapping();
-        
+
         // If user has a preferred model, ONLY use that model (no fallback)
         if ($preferredModel && isset($modelMapping[$preferredModel])) {
             $preferredService = $modelMapping[$preferredModel];
             $preferredProvider = $this->getProviderByName($preferredService);
-            
+
             if ($preferredProvider) {
                 $providers[] = $preferredProvider;
                 Log::info("Using ONLY user's preferred model: {$preferredModel} -> {$preferredService} (no fallback)");
+
                 return $providers; // Return only the preferred provider
             } else {
                 Log::warning("User's preferred model '{$preferredModel}' is not configured, will use fallback");
@@ -317,7 +360,7 @@ class AIWebsiteGenerator
                 }
                 break;
         }
-        
+
         return null;
     }
 
@@ -334,11 +377,12 @@ class AIWebsiteGenerator
             $mockProject = $this->generateMockWebsite($prompt->prompt, $projectType);
 
             // Update the prompt with the response
+            $tokensUsed = rand(100, 500);
             $prompt->update([
                 'response' => json_encode($mockProject),
                 'status' => 'completed',
                 'processed_at' => now(),
-                'tokens_used' => rand(100, 500),
+                'tokens_used' => $tokensUsed,
                 'metadata' => [
                     'model' => 'mock-fallback',
                     'temperature' => 0.7,
@@ -347,6 +391,13 @@ class AIWebsiteGenerator
                     'ai_provider' => 'mock',
                 ],
             ]);
+
+            // Deduct cost from user's balance (mock generation still has a small cost)
+            $this->balanceService->deductGenerationCost(
+                $prompt->project->user,
+                'mock',
+                $tokensUsed
+            );
 
             // Update the project with the generated project
             $prompt->project->update([

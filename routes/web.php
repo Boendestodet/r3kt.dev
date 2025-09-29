@@ -48,6 +48,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/comments', [App\Http\Controllers\CommentController::class, 'store'])->name('comments.store');
     Route::put('comments/{comment}', [App\Http\Controllers\CommentController::class, 'update'])->name('comments.update');
     Route::delete('comments/{comment}', [App\Http\Controllers\CommentController::class, 'destroy'])->name('comments.destroy');
+
+    // Balance routes
+    Route::get('api/balance', [App\Http\Controllers\BalanceController::class, 'index'])->name('balance.index');
+    Route::get('api/balance/cost-estimates', [App\Http\Controllers\BalanceController::class, 'costEstimates'])->name('balance.cost-estimates');
+    Route::get('api/balance/can-afford', [App\Http\Controllers\BalanceController::class, 'canAfford'])->name('balance.can-afford');
+    Route::post('api/balance/add-credits', [App\Http\Controllers\BalanceController::class, 'addCredits'])->name('balance.add-credits');
     Route::post('comments/{comment}/toggle-resolved', [App\Http\Controllers\CommentController::class, 'toggleResolved'])->name('comments.toggle-resolved');
 
     // Docker System Management routes

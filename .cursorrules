@@ -50,6 +50,7 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 - Project management with CRUD operations
 - User authentication and authorization
 - Real-time collaboration with WebSocket support
+- Account balance system with automatic cost deduction for AI generation
 - Modern responsive UI with Tailwind CSS v4
 - Comprehensive testing with Pest v4
 - Docker container management with live previews
@@ -73,6 +74,7 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 - Container start timing issues resolved
 - Multi-stack support is comprehensive and production-ready
 - Real-time collaboration features are implemented
+- Account balance system is fully implemented with automatic cost deduction
 - Memory bank is complete and up-to-date
 
 ## Recent Fixes
@@ -82,6 +84,7 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 - **Multi-AI Provider System**: Added Gemini and Cursor CLI providers with intelligent cost optimization
 - **Comprehensive Multi-Stack Support**: Added support for all major frameworks and development stacks
 - **Real-time Collaboration**: Implemented WebSocket-based collaboration with user activity tracking
+- **Account Balance System**: Implemented complete balance management with automatic cost deduction for AI generation
 
 ## Development Patterns
 - **File Type Detection**: Always check project settings to determine file type before creating files
@@ -90,3 +93,5 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 - **Project Type Logic**: Use project settings to determine appropriate file creation strategy
 - **Stack Controller Factory**: Use factory pattern for managing different framework controllers
 - **Real-time Features**: Use Laravel broadcasting for real-time collaboration features
+- **Balance Management**: Always check user balance before AI generation and deduct costs automatically
+- **Cost Calculation**: Use BalanceService for consistent cost calculation across all AI providers

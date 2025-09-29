@@ -29,6 +29,7 @@ Database (MySQL)
 - **DockerService**: Manages real Docker container lifecycle with live previews
 - **CollaborationService**: Manages real-time collaboration and user activity tracking
 - **StackControllerFactory**: Factory pattern for managing different framework controllers
+- **BalanceService**: Manages user account balance and cost deduction for AI generation
 
 ### 3. Repository Pattern (via Eloquent)
 - Models act as repositories with built-in query methods
@@ -98,44 +99,50 @@ CRUD Operations → Validation → Database Updates → Real-time UI Updates
 Token Usage Tracking → Cost Calculation → Provider Selection → Budget Management
 ```
 
-### 9. Sandbox Interface Flow
+### 9. Account Balance Management Pattern
+```
+User Balance Check → AI Generation → Cost Calculation → Balance Deduction → 
+Total Spent Update → Real-time UI Update → Balance Refresh
+```
+
+### 10. Sandbox Interface Flow
 ```
 Project Selection → Deployment Modal → Progress Tracking → Sandbox Redirect → 
 Interactive Development (Chat, Console, Code Editor) → File Management → AI Integration
 ```
 
-### 10. Project Creation Flow
+### 11. Project Creation Flow
 ```
 User Input → Project Name Validation → Project Creation → Database Setup → 
 File System Setup → Project Verification → AI Code Generation → Wait for AI Completion → 
 Docker Deployment → Container Startup → Sandbox Redirect
 ```
 
-### 11. Project Verification Pattern
+### 12. Project Verification Pattern
 ```
 Database Check → Folder Existence Check → Required Files Check → 
 Overall Status Assessment → Success/Partial/Failed Response → Continue/Stop Flow
 ```
 
-### 12. Configuration File Protection Pattern
+### 13. Configuration File Protection Pattern
 ```
 AI Generation → File Filtering → Protected Files Blocked → System Files Created → 
 Docker Configuration → Container Deployment → Live Preview
 ```
 
-### 13. Multi-Stack Project Creation Pattern
+### 14. Multi-Stack Project Creation Pattern
 ```
 User Input → Stack Selection (Next.js/Vite+React/Vite+Vue/SvelteKit/Astro/Nuxt3/Backend/GameDev/Traditional) → Project Type Detection → 
 Stack-Specific File Creation → Configuration Protection → Docker Setup → Live Preview
 ```
 
-### 14. Real-time Collaboration Pattern
+### 15. Real-time Collaboration Pattern
 ```
 User Activity → CollaborationService → Cache Storage → WebSocket Broadcast → 
 ProjectCollaborationEvent → Private Channel → Real-time Updates → User Activity Tracking
 ```
 
-### 15. Stack Controller Factory Pattern
+### 16. Stack Controller Factory Pattern
 ```
 Project Type Detection → StackControllerFactory → Appropriate Controller Selection → 
 Stack-Specific Operations → Framework-Specific File Generation → Docker Configuration
@@ -309,6 +316,7 @@ Stack-Specific Operations → Framework-Specific File Generation → Docker Conf
 - **AIWebsiteGeneratorService**: Business logic for website generation
 - **CollaborationService**: Real-time collaboration management
 - **StackControllerFactory**: Factory for framework-specific controllers
+- **BalanceService**: User account balance and cost management
 - **Policies**: Authorization logic for user permissions
 
 ### Frontend Components

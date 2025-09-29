@@ -31,15 +31,24 @@ interface Project {
   }>
 }
 
+interface BalanceInfo {
+  balance: number
+  formatted_balance: string
+  total_spent: number
+  formatted_total_spent: string
+  can_generate: boolean
+}
+
 interface Props {
   projects: {
     data: Project[]
     links: any[]
     meta: any
   }
+  balanceInfo: BalanceInfo
 }
 
-export default function R3ktSandboxPage({ projects }: Props) {
+export default function R3ktSandboxPage({ projects, balanceInfo }: Props) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null) // Changed to null initially
   const [selectedStack, setSelectedStack] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("Modern Web")
@@ -423,10 +432,17 @@ export default function R3ktSandboxPage({ projects }: Props) {
         console.log('Project created successfully:', page)
         // Get project from props
         const project = page.props?.createdProject
+        const balanceInfo = page.props?.balanceInfo
+        
         if (project) {
           setCreatedProject({ id: project.id, name: project.name })
           setCreationProgress(10)
           setCreationStatus("Checking container...")
+          
+          // Update balance info if provided
+          if (balanceInfo) {
+            setBalanceInfo(balanceInfo)
+          }
           
           // Update creation state
           setCreationState({
@@ -572,6 +588,16 @@ export default function R3ktSandboxPage({ projects }: Props) {
             step: 'ai'
           })
           
+          // Refresh balance info after AI generation starts
+          fetch('/api/balance')
+            .then(response => response.json())
+            .then(data => {
+              if (data.balanceInfo) {
+                setBalanceInfo(data.balanceInfo)
+              }
+            })
+            .catch(error => console.error('Failed to refresh balance:', error))
+          
           // Step 3: Wait for AI generation to complete
           waitForAIGeneration(projectId, prompt.id)
         } else {
@@ -585,6 +611,16 @@ export default function R3ktSandboxPage({ projects }: Props) {
             projectId: projectId,
             step: 'ai'
           })
+          
+          // Refresh balance info after AI generation starts
+          fetch('/api/balance')
+            .then(response => response.json())
+            .then(data => {
+              if (data.balanceInfo) {
+                setBalanceInfo(data.balanceInfo)
+              }
+            })
+            .catch(error => console.error('Failed to refresh balance:', error))
           
           // Wait for AI generation to complete by checking the latest prompt for this project
           waitForAIGenerationByProject(projectId)
@@ -622,6 +658,16 @@ export default function R3ktSandboxPage({ projects }: Props) {
             if (data.status === 'completed') {
               setCreationProgress(50)
               setCreationStatus("Starting the project...")
+              
+              // Refresh balance info after AI generation completes
+              fetch('/api/balance')
+                .then(response => response.json())
+                .then(data => {
+                  if (data.balanceInfo) {
+                    setBalanceInfo(data.balanceInfo)
+                  }
+                })
+                .catch(error => console.error('Failed to refresh balance:', error))
               
               // Update creation state
               setCreationState({
@@ -877,6 +923,7 @@ export default function R3ktSandboxPage({ projects }: Props) {
           searchQuery={searchQuery}
           showCreditsDropdown={showCreditsDropdown}
           projects={projects.data}
+          balanceInfo={balanceInfo}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           onToggleHidden={() => setSidebarHidden(!sidebarHidden)}
           onSearchChange={setSearchQuery}
@@ -944,6 +991,7 @@ export default function R3ktSandboxPage({ projects }: Props) {
         creationStatus={creationStatus}
         createdProject={createdProject}
         creationState={creationState}
+        balanceInfo={balanceInfo}
         onClose={safeCloseModal}
         onProjectNameChange={setProjectName}
         onProjectDescriptionChange={setProjectDescription}

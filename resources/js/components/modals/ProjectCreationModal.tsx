@@ -22,6 +22,13 @@ interface ProjectCreationModalProps {
     promptId?: number
     step: 'project' | 'ai' | 'docker' | 'start' | 'complete'
   } | null
+  balanceInfo: {
+    balance: number
+    formatted_balance: string
+    total_spent: number
+    formatted_total_spent: string
+    can_generate: boolean
+  }
   onClose: () => void
   onProjectNameChange: (name: string) => void
   onProjectDescriptionChange: (description: string) => void
@@ -46,6 +53,7 @@ export const ProjectCreationModal = ({
   creationStatus,
   createdProject,
   creationState,
+  balanceInfo,
   onClose,
   onProjectNameChange,
   onProjectDescriptionChange,
@@ -142,6 +150,27 @@ export const ProjectCreationModal = ({
           
           {!isCreatingProject ? (
             <div className="space-y-6">
+              {/* Balance Warning */}
+              {!balanceInfo.can_generate && (
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                        Insufficient Balance
+                      </h3>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                        Your current balance is {balanceInfo.formatted_balance}. You need credits to generate projects with AI.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Project Name
@@ -222,7 +251,7 @@ export const ProjectCreationModal = ({
               
               <button
                 onClick={onCreateProject}
-                disabled={!projectName.trim() || !projectPrompt.trim() || isCreatingProject || !!nameError || isCheckingName || !selectedModel || !selectedStack}
+                disabled={!projectName.trim() || !projectPrompt.trim() || isCreatingProject || !!nameError || isCheckingName || !selectedModel || !selectedStack || !balanceInfo.can_generate}
                 className="relative group bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border border-purple-400/20 overflow-hidden w-full"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

@@ -22,6 +22,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'balance',
+        'total_spent',
     ];
 
     /**
@@ -44,11 +46,62 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'balance' => 'decimal:4',
+            'total_spent' => 'decimal:4',
         ];
     }
 
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
+    }
+
+    /**
+     * Check if user has sufficient balance for a given cost
+     */
+    public function hasSufficientBalance(float $cost): bool
+    {
+        return $this->balance >= $cost;
+    }
+
+    /**
+     * Deduct amount from user's balance
+     */
+    public function deductBalance(float $amount): bool
+    {
+        if (! $this->hasSufficientBalance($amount)) {
+            return false;
+        }
+
+        $this->balance -= $amount;
+        $this->total_spent += $amount;
+        $this->save();
+
+        return true;
+    }
+
+    /**
+     * Add amount to user's balance
+     */
+    public function addBalance(float $amount): void
+    {
+        $this->balance += $amount;
+        $this->save();
+    }
+
+    /**
+     * Get formatted balance
+     */
+    public function getFormattedBalance(): string
+    {
+        return '$'.number_format($this->balance, 4);
+    }
+
+    /**
+     * Get formatted total spent
+     */
+    public function getFormattedTotalSpent(): string
+    {
+        return '$'.number_format($this->total_spent, 4);
     }
 }

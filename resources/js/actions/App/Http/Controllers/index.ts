@@ -5,6 +5,7 @@ import ProjectVerificationController from './ProjectVerificationController'
 import PromptController from './PromptController'
 import ContainerController from './ContainerController'
 import CommentController from './CommentController'
+import BalanceController from './BalanceController'
 import DockerSystemController from './DockerSystemController'
 import ProjectDeploymentController from './ProjectDeploymentController'
 import SubdomainController from './SubdomainController'
@@ -19,6 +20,7 @@ const Controllers = {
     PromptController,
     ContainerController,
     CommentController,
+    BalanceController,
     DockerSystemController,
     ProjectDeploymentController,
     SubdomainController,

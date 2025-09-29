@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
+use App\Services\BalanceService;
 use App\Services\CollaborationService;
 use App\Services\DockerService;
 use App\Services\FilePermissionService;
@@ -22,20 +23,25 @@ class ProjectController extends Controller
 
     public function __construct(
         private CollaborationService $collaborationService,
-        private DockerService $dockerService
+        private DockerService $dockerService,
+        private BalanceService $balanceService
     ) {
         //
     }
 
     public function index(): Response
     {
-        $projects = auth()->user()->projects()
+        $user = auth()->user();
+        $projects = $user->projects()
             ->with(['containers', 'prompts'])
             ->latest()
             ->paginate(12);
 
+        $balanceInfo = $this->balanceService->getBalanceInfo($user);
+
         return Inertia::render('projects/Index', [
             'projects' => $projects,
+            'balanceInfo' => $balanceInfo,
         ]);
     }
 
@@ -72,7 +78,18 @@ class ProjectController extends Controller
 
     public function store(StoreProjectRequest $request)
     {
-        $project = auth()->user()->projects()->create([
+        $user = auth()->user();
+
+        // Check if user has sufficient balance for AI generation
+        $canAfford = $this->balanceService->canAffordGeneration($user, 'gemini'); // Check with cheapest provider
+
+        if (! $canAfford) {
+            return back()->withErrors([
+                'balance' => 'Insufficient balance. Please add credits to your account to create projects.',
+            ]);
+        }
+
+        $project = $user->projects()->create([
             'name' => $request->name,
             'description' => $request->description,
             'slug' => Str::slug($request->name),
@@ -84,21 +101,29 @@ class ProjectController extends Controller
 
         // For Inertia requests, return back with the project data in props
         if (request()->header('X-Inertia')) {
+            $user = auth()->user();
+            $balanceInfo = $this->balanceService->getBalanceInfo($user);
+
             return Inertia::render('projects/Index', [
-                'projects' => auth()->user()->projects()
+                'projects' => $user->projects()
                     ->with(['containers', 'prompts'])
                     ->latest()
                     ->paginate(12),
                 'createdProject' => $project,
+                'balanceInfo' => $balanceInfo,
             ]);
         }
 
         // For AJAX requests, return JSON
         if (request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            $user = auth()->user();
+            $balanceInfo = $this->balanceService->getBalanceInfo($user);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Project created successfully!',
                 'project' => $project,
+                'balanceInfo' => $balanceInfo,
             ]);
         }
 
@@ -325,10 +350,10 @@ EOT;
     {
         $settings = $project->settings ?? [];
         $stack = strtolower(trim($settings['stack'] ?? ''));
-        
+
         // Determine if this is a Vue or React project
         $isVueProject = $stack === 'vite-vue';
-        
+
         if ($isVueProject) {
             $this->createViteVueProject($projectDir, $project);
         } else {

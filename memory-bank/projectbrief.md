@@ -38,6 +38,7 @@ Create a platform where users can:
 - ✅ **NEW**: Configuration file protection system preventing AI overwrites
 - ✅ **NEW**: Real-time collaboration features with WebSocket support
 - ✅ **NEW**: Enhanced AI model selection with cost comparison and provider fallback
+- ✅ **NEW**: Account balance system with automatic cost deduction for AI generation
 
 ## Technical Constraints
 - Must use Laravel 12 with PHP 8.3
