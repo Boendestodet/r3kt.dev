@@ -171,7 +171,8 @@ test('generates website for vite-react project type', function () {
     $project->refresh();
 
     expect($prompt->status)->toBe('completed');
-    expect($prompt->response)->toContain('package.json');
+    expect($prompt->response)->toContain('index.html');
+    expect($prompt->response)->toContain('src/main.tsx');
     expect($project->status)->toBe('ready');
     expect($project->generated_code)->toContain('vite');
 });
@@ -193,7 +194,8 @@ test('generates website for vite-vue project type', function () {
     $project->refresh();
 
     expect($prompt->status)->toBe('completed');
-    expect($prompt->response)->toContain('package.json');
+    expect($prompt->response)->toContain('index.html');
+    expect($prompt->response)->toContain('src/main.ts');
     expect($project->status)->toBe('ready');
     expect($project->generated_code)->toContain('vite');
 });

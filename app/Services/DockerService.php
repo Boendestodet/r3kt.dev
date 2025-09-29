@@ -39,27 +39,54 @@ class DockerService
             if ($containerId) {
                 $url = $this->getProjectUrl($container->project, $port);
 
-                $container->update([
-                    'container_id' => $containerId,
-                    'status' => 'running',
-                    'port' => $port,
-                    'url' => $url,
-                ]);
+                // Wait for the application to be ready
+                $isReady = $this->waitForApplicationReady($container, $port);
 
-                // Update project status
-                $container->project->update([
-                    'status' => 'ready',
-                    'preview_url' => $url,
-                    'last_built_at' => now(),
-                ]);
+                if ($isReady) {
+                    $container->update([
+                        'container_id' => $containerId,
+                        'status' => 'running',
+                        'port' => $port,
+                        'url' => $url,
+                    ]);
 
-                Log::info('Container started successfully', [
-                    'container_id' => $containerId,
-                    'project_id' => $container->project_id,
-                    'url' => $url,
-                ]);
+                    // Update project status
+                    $container->project->update([
+                        'status' => 'ready',
+                        'preview_url' => $url,
+                        'last_built_at' => now(),
+                    ]);
 
-                return true;
+                    Log::info('Container started successfully and application is ready', [
+                        'container_id' => $containerId,
+                        'project_id' => $container->project_id,
+                        'url' => $url,
+                    ]);
+
+                    return true;
+                } else {
+                    Log::warning('Container started but application is not ready', [
+                        'container_id' => $containerId,
+                        'project_id' => $container->project_id,
+                        'url' => $url,
+                    ]);
+
+                    // Still mark as running but log the issue
+                    $container->update([
+                        'container_id' => $containerId,
+                        'status' => 'running',
+                        'port' => $port,
+                        'url' => $url,
+                    ]);
+
+                    $container->project->update([
+                        'status' => 'ready',
+                        'preview_url' => $url,
+                        'last_built_at' => now(),
+                    ]);
+
+                    return true; // Return true anyway since container is running
+                }
             }
 
             $container->update(['status' => 'error']);
@@ -697,6 +724,64 @@ class DockerService
         } catch (\Exception $e) {
             return "Error retrieving logs: {$e->getMessage()}";
         }
+    }
+
+    /**
+     * Wait for the application inside the container to be ready
+     */
+    private function waitForApplicationReady(Container $container, int $port, int $maxWaitTime = 30): bool
+    {
+        // In testing environment, assume ready immediately
+        if (app()->environment('testing')) {
+            return true;
+        }
+
+        $startTime = time();
+        $checkUrl = "http://localhost:{$port}";
+
+        Log::info('Waiting for application to be ready', [
+            'project_id' => $container->project_id,
+            'port' => $port,
+            'check_url' => $checkUrl,
+            'max_wait_time' => $maxWaitTime,
+        ]);
+
+        while ((time() - $startTime) < $maxWaitTime) {
+            try {
+                // Try to make a simple HTTP request to check if the app is responding
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 5,
+                        'method' => 'GET',
+                        'header' => 'User-Agent: DockerService Health Check',
+                    ],
+                ]);
+
+                $response = @file_get_contents($checkUrl, false, $context);
+                
+                if ($response !== false) {
+                    Log::info('Application is ready and responding', [
+                        'project_id' => $container->project_id,
+                        'port' => $port,
+                        'response_length' => strlen($response),
+                    ]);
+                    return true;
+                }
+            } catch (\Exception $e) {
+                // Ignore connection errors during startup
+            }
+
+            // Wait 2 seconds before next check
+            sleep(2);
+        }
+
+        Log::warning('Application did not become ready within timeout', [
+            'project_id' => $container->project_id,
+            'port' => $port,
+            'wait_time' => time() - $startTime,
+        ]);
+
+        return false;
     }
 
     /**

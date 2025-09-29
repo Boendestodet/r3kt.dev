@@ -1,7 +1,7 @@
 # Project Brief: Lovable Clone - AI-Powered Website Builder
 
 ## Project Overview
-This is a production-ready Laravel-based clone of Lovable, an AI-powered web development platform that allows users to build websites using natural language prompts. The project features dual AI provider integration (OpenAI + Claude), smart cost optimization, real Docker container management with live previews, and comprehensive error handling. Built with modern full-stack development practices using Laravel 12, React 19, and Inertia.js v2.
+This is a production-ready Laravel-based clone of Lovable, an AI-powered web development platform that allows users to build websites using natural language prompts. The project features multi-AI provider integration (Claude, OpenAI, Gemini, Cursor CLI), smart cost optimization, real Docker container management with live previews, comprehensive multi-stack support, and real-time collaboration features. Built with modern full-stack development practices using Laravel 12, React 19, and Inertia.js v2.
 
 ## Core Purpose
 Create a platform where users can:
@@ -24,16 +24,20 @@ Create a platform where users can:
 - ✅ Generated websites are functional and visually appealing
 - ✅ Platform supports multiple website types (Portfolio, E-commerce, Blog, Landing Page, Dashboard)
 - ✅ Code is well-tested and maintainable
-- ✅ **NEW**: Dual AI provider system with cost optimization
+- ✅ **NEW**: Multi-AI provider system with cost optimization (Claude, OpenAI, Gemini, Cursor CLI)
 - ✅ **NEW**: Real AI integration with fallback mechanisms
 - ✅ **NEW**: Professional GitHub repository with documentation
 - ✅ **NEW**: Real Docker container management with live previews
 - ✅ **NEW**: Next.js development server in containers (no nginx needed)
 - ✅ **NEW**: Fixed Next.js file creation logic (no more duplicate HTML files)
 - ✅ **NEW**: Fixed container start timing issues with AI generation
-- ✅ **NEW**: Vite + React + TypeScript stack support with complete Docker integration
+- ✅ **NEW**: Comprehensive multi-stack support (Next.js, Vite + React, Vite + Vue, SvelteKit, Astro, Nuxt 3)
+- ✅ **NEW**: Backend framework support (Node.js + Express, Python + FastAPI, Go + Gin, Rust + Axum)
+- ✅ **NEW**: Game development stack support (Unity + C#, Unreal + C++, Godot + GDScript)
+- ✅ **NEW**: Traditional framework support (PHP + Laravel, Java + Spring, C# + .NET)
 - ✅ **NEW**: Configuration file protection system preventing AI overwrites
-- ✅ **NEW**: Multi-stack support (Next.js and Vite) with independent configurations
+- ✅ **NEW**: Real-time collaboration features with WebSocket support
+- ✅ **NEW**: Enhanced AI model selection with cost comparison and provider fallback
 
 ## Technical Constraints
 - Must use Laravel 12 with PHP 8.3

@@ -1,7 +1,7 @@
 # Lovable Clone - AI-Powered Website Builder
 
 ## Project Overview
-This is a Laravel 12 + React 19 application that clones Lovable's AI-powered website builder. Users can generate websites using natural language prompts, with intelligent detection of website types and modern UI/UX.
+This is a Laravel 12 + React 19 application that clones Lovable's AI-powered website builder. Users can generate websites using natural language prompts, with intelligent detection of website types, comprehensive multi-stack support, and real-time collaboration features.
 
 ## Key Technologies
 - **Backend**: Laravel 12, PHP 8.3, MySQL
@@ -9,6 +9,8 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 - **Styling**: Tailwind CSS v4
 - **Testing**: Pest v4
 - **Build**: Vite
+- **AI Providers**: Gemini, Claude, OpenAI, Cursor CLI
+- **Real-time**: WebSocket broadcasting with Laravel events
 
 ## Development Patterns
 
@@ -17,12 +19,15 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 - Implement Form Request classes for validation
 - Use Policies for authorization
 - Follow Laravel 12 streamlined structure (no middleware files, bootstrap/app.php for configuration)
+- Use Service classes for business logic (AIWebsiteGenerator, CollaborationService, StackControllerFactory)
+- Implement Broadcasting events for real-time features
 
 ### React Patterns
 - Component-based architecture with TypeScript
 - Use Inertia.js for navigation and forms
 - Implement proper error handling and loading states
 - Follow React 19 best practices
+- Use custom hooks for complex state management
 
 ### Database Patterns
 - Use migrations for schema changes
@@ -32,16 +37,22 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 
 ## Project Structure
 - **Models**: User, Project, Prompt, Comment, Container
-- **Services**: AIWebsiteGeneratorService, ProjectService, ContainerService
+- **Services**: AIWebsiteGeneratorService, ProjectService, DockerService, CollaborationService, StackControllerFactory
+- **Controllers**: NextJSController, ViteReactController, ViteVueController, SvelteKitController, AstroController, NuxtController, ExpressController, FastAPIController
+- **Events**: ProjectCollaborationEvent for real-time broadcasting
 - **Frontend**: Pages, Components, Layouts, Hooks
 - **Testing**: Feature tests for user flows, unit tests for business logic
 
 ## Key Features
-- AI-powered website generation with multiple types
+- AI-powered website generation with multiple types and frameworks
+- Multi-AI provider system (Gemini, Claude, OpenAI, Cursor CLI) with cost optimization
+- Comprehensive multi-stack support (Next.js, Vite + React, Vite + Vue, SvelteKit, Astro, Nuxt 3, Backend, Game Dev, Traditional)
 - Project management with CRUD operations
 - User authentication and authorization
+- Real-time collaboration with WebSocket support
 - Modern responsive UI with Tailwind CSS v4
 - Comprehensive testing with Pest v4
+- Docker container management with live previews
 
 ## Development Guidelines
 - Always write tests for new features
@@ -49,23 +60,33 @@ This is a Laravel 12 + React 19 application that clones Lovable's AI-powered web
 - Follow existing code conventions
 - Use Laravel Boost tools for development
 - Maintain memory bank documentation
+- Implement proper error handling and fallback mechanisms
+- Use factory pattern for stack-specific controllers
+- Implement real-time features with Laravel broadcasting
 
 ## Current Status
 - Core platform is 100% complete
-- AI integration is fully functional with dual providers (OpenAI + Claude)
+- AI integration is fully functional with multi-provider system
 - Docker container management with live previews is working
 - Project creation flow is complete with verification and progress tracking
 - File creation logic fixed (Next.js-only files, no duplicate HTML)
 - Container start timing issues resolved
+- Multi-stack support is comprehensive and production-ready
+- Real-time collaboration features are implemented
 - Memory bank is complete and up-to-date
 
 ## Recent Fixes
 - **File Creation Logic**: Fixed issue where both HTML and Next.js files were being created - now only creates appropriate files based on project type
 - **Container Start Issue**: Fixed container start failure due to missing generated_code by improving AI generation waiting logic
 - **AI Generation Timing**: Fixed timing issue where frontend was not properly waiting for AI generation to complete
+- **Multi-AI Provider System**: Added Gemini and Cursor CLI providers with intelligent cost optimization
+- **Comprehensive Multi-Stack Support**: Added support for all major frameworks and development stacks
+- **Real-time Collaboration**: Implemented WebSocket-based collaboration with user activity tracking
 
 ## Development Patterns
 - **File Type Detection**: Always check project settings to determine file type before creating files
 - **AI Generation Waiting**: Always wait for AI generation to complete before starting containers
 - **Error Handling**: Implement comprehensive error handling with fallback mechanisms
 - **Project Type Logic**: Use project settings to determine appropriate file creation strategy
+- **Stack Controller Factory**: Use factory pattern for managing different framework controllers
+- **Real-time Features**: Use Laravel broadcasting for real-time collaboration features

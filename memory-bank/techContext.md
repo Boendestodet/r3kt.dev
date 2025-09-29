@@ -30,14 +30,20 @@
 
 ### AI Integration
 - **OpenAI GPT-4**: Primary AI provider for website generation
-- **Claude 3.5 Sonnet**: Cost-optimized AI provider (3.7x cheaper)
+- **Claude 3.5 Sonnet**: Cost-optimized AI provider (good balance)
+- **Gemini 1.5 Pro**: Cheapest AI provider option
+- **Cursor CLI**: Terminal-based AI provider
 - **Anthropic PHP Client**: Official Claude AI integration
 - **OpenAI PHP Client**: Official OpenAI integration
+- **Google AI PHP Client**: Official Gemini integration
 - **Smart Fallback**: Automatic provider switching for reliability
 
 ### Docker Integration
 - **Docker Engine**: Real container management for live previews
-- **Next.js Development Server**: Built-in server (no nginx required)
+- **Multi-Stack Development Servers**: Next.js, Vite, SvelteKit, Astro, Nuxt 3 (no nginx required)
+- **Backend Framework Support**: Node.js + Express, Python + FastAPI, Go + Gin, Rust + Axum
+- **Game Development Support**: Unity + C#, Unreal + C++, Godot + GDScript
+- **Traditional Framework Support**: PHP + Laravel, Java + Spring, C# + .NET
 - **Port Management**: Dynamic port allocation and conflict resolution
 - **Resource Cleanup**: Automatic cleanup of old containers and images
 - **Container Monitoring**: Health checks and resource usage tracking
@@ -54,6 +60,7 @@
 - **AI Chat Integration**: Real-time chat with prompt enhancement
 - **Advanced Textarea**: Intelligent auto-resize with dynamic height management
 - **Enhanced Prompt System**: Full text visibility with intelligent height detection
+- **Real-time Collaboration**: WebSocket-based collaboration features
 
 ## Development Environment
 
@@ -82,13 +89,14 @@ php artisan pail          # Log monitoring
 ```
 app/
 ├── Http/
-│   ├── Controllers/     # API and web controllers
+│   ├── Controllers/     # API and web controllers (NextJSController, ViteReactController, ViteVueController, etc.)
 │   ├── Requests/        # Form validation classes
 │   └── Middleware/      # Custom middleware
 ├── Models/              # Eloquent models
-├── Services/            # Business logic services
+├── Services/            # Business logic services (AIWebsiteGenerator, CollaborationService, StackControllerFactory, etc.)
 ├── Jobs/                # Background job classes
 ├── Policies/            # Authorization policies
+├── Events/              # Broadcasting events (ProjectCollaborationEvent)
 └── Providers/           # Service providers
 ```
 
@@ -143,21 +151,40 @@ CLAUDE_API_KEY=your_claude_api_key_here
 CLAUDE_MODEL=claude-3-5-sonnet-20241022
 CLAUDE_MAX_TOKENS=4000
 CLAUDE_TEMPERATURE=0.7
+
+# Gemini AI Configuration
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-1.5-pro
+GEMINI_MAX_TOKENS=4000
+GEMINI_TEMPERATURE=0.7
+
+# Cursor CLI Configuration (no API key needed)
+CURSOR_CLI_ENABLED=true
 ```
 
 ### Cost Management
 - **Token Tracking**: Automatic usage monitoring per request
 - **Cost Estimation**: Real-time calculation before generation
-- **Provider Selection**: Intelligent routing based on cost and availability
+- **Provider Selection**: Intelligent routing based on cost and availability (Gemini → Claude → OpenAI → Cursor CLI)
 - **Budget Limits**: Configurable spending controls
 
 ### Docker Configuration
 - **Container Base Image**: Node.js 18 Alpine
-- **Development Mode**: `npm run dev` for live previews
+- **Multi-Stack Development Mode**: `npm run dev` for live previews (Next.js, Vite, SvelteKit, Astro, Nuxt 3)
+- **Backend Framework Support**: Node.js + Express, Python + FastAPI, Go + Gin, Rust + Axum
+- **Game Development Support**: Unity + C#, Unreal + C++, Godot + GDScript
+- **Traditional Framework Support**: PHP + Laravel, Java + Spring, C# + .NET
 - **Port Range**: 8000-8999 for dynamic allocation
 - **Resource Limits**: Configurable CPU and memory constraints
 - **Cleanup Policies**: Automatic removal of stopped containers
 - **Health Checks**: Container status monitoring
+
+### Real-time Collaboration Configuration
+- **Broadcasting Driver**: Redis/Pusher for WebSocket support
+- **Cache Driver**: Redis for activity storage
+- **Event Broadcasting**: Laravel broadcasting system
+- **Private Channels**: Project-specific collaboration channels
+- **Activity Tracking**: 30-minute cache expiration for user activities
 
 ### Build Configuration
 - **Vite**: Asset bundling and optimization

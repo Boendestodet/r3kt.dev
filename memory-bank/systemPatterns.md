@@ -19,12 +19,16 @@ Database (MySQL)
 - **Views**: React components rendered via Inertia.js
 
 ### 2. Service Layer Pattern
-- **AIWebsiteGeneratorService**: Handles prompt analysis and website generation with dual AI providers
+- **AIWebsiteGeneratorService**: Handles prompt analysis and website generation with multi-AI providers
 - **OpenAIService**: Manages OpenAI GPT-4 API integration
 - **ClaudeAIService**: Manages Claude 3.5 Sonnet API integration
+- **GeminiAIService**: Manages Google Gemini API integration
+- **CursorAIService**: Manages Cursor CLI integration
 - **AICostEstimator**: Provides cost estimation for AI operations
 - **ProjectService**: Manages project operations and business logic
 - **DockerService**: Manages real Docker container lifecycle with live previews
+- **CollaborationService**: Manages real-time collaboration and user activity tracking
+- **StackControllerFactory**: Factory pattern for managing different framework controllers
 
 ### 3. Repository Pattern (via Eloquent)
 - Models act as repositories with built-in query methods
@@ -46,16 +50,19 @@ Registration/Login → User Model → Session Management → Protected Routes
 
 ### 2. AI Website Generation Flow ✅ FULLY WORKING
 ```
-User Prompt → AI Provider Selection (Claude first, then OpenAI) → AI Analysis → 
-Website Type Detection → Stack Selection (Next.js, Vite, or SvelteKit) → Project Generation → 
+User Prompt → AI Provider Selection (Gemini first, then Claude, then OpenAI, then Cursor CLI) → AI Analysis → 
+Website Type Detection → Stack Selection (Next.js, Vite + React, Vite + Vue, SvelteKit, Astro, Nuxt 3, Backend, Game Dev, Traditional) → Project Generation → 
 Code Storage → Configuration File Protection → Project Ready
 
 Current Status:
-- ✅ Claude Code working with Next.js, Vite + React, and SvelteKit
-- ✅ OpenAI working with Next.js, Vite + React, and SvelteKit  
+- ✅ Gemini working with all frameworks (cheapest option)
+- ✅ Claude Code working with all frameworks
+- ✅ OpenAI working with all frameworks  
+- ✅ Cursor CLI working with all frameworks
 - ✅ Token management optimized (4000 tokens)
 - ✅ Real AI generation (no more mock fallback)
 - ✅ Prompt following (AI follows user prompts exactly)
+- ✅ Cost optimization (Gemini → Claude → OpenAI → Cursor CLI)
 ```
 
 ### 3. Docker Container Management Flow
@@ -66,7 +73,7 @@ Development Server (Next.js/Vite/SvelteKit) → Port Allocation → Live Preview
 
 ### 4. AI Provider Fallback Pattern
 ```
-Claude AI (Primary - 3.7x cheaper) → OpenAI (Backup) → Mock Generation (Fallback)
+Gemini AI (Primary - cheapest) → Claude AI (Secondary - good balance) → OpenAI (Tertiary - most reliable) → Cursor CLI (Quaternary - terminal-based) → Mock Generation (Fallback)
 ```
 
 ### 5. Docker Container Lifecycle Pattern
@@ -118,19 +125,33 @@ Docker Configuration → Container Deployment → Live Preview
 
 ### 13. Multi-Stack Project Creation Pattern
 ```
-User Input → Stack Selection (Next.js/Vite/SvelteKit) → Project Type Detection → 
+User Input → Stack Selection (Next.js/Vite+React/Vite+Vue/SvelteKit/Astro/Nuxt3/Backend/GameDev/Traditional) → Project Type Detection → 
 Stack-Specific File Creation → Configuration Protection → Docker Setup → Live Preview
+```
+
+### 14. Real-time Collaboration Pattern
+```
+User Activity → CollaborationService → Cache Storage → WebSocket Broadcast → 
+ProjectCollaborationEvent → Private Channel → Real-time Updates → User Activity Tracking
+```
+
+### 15. Stack Controller Factory Pattern
+```
+Project Type Detection → StackControllerFactory → Appropriate Controller Selection → 
+Stack-Specific Operations → Framework-Specific File Generation → Docker Configuration
 ```
 
 ## AI Integration Patterns
 
 ### 1. Multi-Provider Architecture
-- **Primary Provider**: Claude 3.5 Sonnet (cost-optimized)
-- **Backup Provider**: OpenAI GPT-4 (reliability)
+- **Primary Provider**: Gemini 1.5 Pro (cheapest option)
+- **Secondary Provider**: Claude 3.5 Sonnet (good balance of cost and quality)
+- **Tertiary Provider**: OpenAI GPT-4 (most reliable)
+- **Quaternary Provider**: Cursor CLI (terminal-based)
 - **Fallback Provider**: Mock generation (guaranteed availability)
 
 ### 2. Cost Optimization Strategy
-- **Provider Selection**: Claude tried first due to 3.7x lower cost
+- **Provider Selection**: Gemini tried first due to lowest cost, then Claude, then OpenAI, then Cursor CLI
 - **Token Tracking**: Complete usage monitoring per request
 - **Cost Estimation**: Real-time cost calculation before generation
 - **Budget Management**: Configurable spending limits
@@ -260,12 +281,34 @@ Stack-Specific File Creation → Configuration Protection → Docker Setup → L
 - **File Type Detection**: Smart detection of project type (Next.js vs HTML) for appropriate file creation
 - **AI Generation Waiting**: Proper waiting for AI generation completion before container startup
 
+## Collaboration Patterns
+
+### 1. Real-time User Activity Tracking
+- **Activity Storage**: Cache-based storage with 30-minute expiration
+- **WebSocket Broadcasting**: Real-time updates via private channels
+- **User Presence**: Track active collaborators per project
+- **Activity Types**: View, edit, deploy, chat, console interactions
+
+### 2. WebSocket Event System
+- **ProjectCollaborationEvent**: Broadcasts user activities
+- **Private Channels**: Project-specific communication channels
+- **Event Data**: User info, action type, timestamp, additional data
+- **Testing Support**: Disabled in testing environment
+
+### 3. Collaboration Service Architecture
+- **CollaborationService**: Central service for managing collaboration
+- **Cache Integration**: Redis/Cache for activity storage
+- **Event Broadcasting**: Laravel broadcasting system
+- **User Management**: Track and manage active collaborators
+
 ## Component Relationships
 
 ### Backend Components
 - **User Model**: Central to authentication and project ownership
 - **Project Model**: Core entity with relationships to prompts and containers
 - **AIWebsiteGeneratorService**: Business logic for website generation
+- **CollaborationService**: Real-time collaboration management
+- **StackControllerFactory**: Factory for framework-specific controllers
 - **Policies**: Authorization logic for user permissions
 
 ### Frontend Components

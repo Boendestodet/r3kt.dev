@@ -149,11 +149,12 @@ class ProjectController extends Controller
     private function createProjectStructure(string $projectDir, Project $project): void
     {
         $settings = $project->settings ?? [];
-        $stack = $settings['stack'] ?? '';
+        $stack = strtolower(trim($settings['stack'] ?? ''));
 
-        if ($stack === 'vite' || $stack === 'Vite + React') {
+        // Check for specific Vite-based projects
+        if ($stack === 'vite-react' || $stack === 'vite-vue') {
             $this->createBasicViteProject($projectDir, $project);
-        } elseif ($stack === 'sveltekit' || $stack === 'SvelteKit') {
+        } elseif (str_contains($stack, 'sveltekit') || str_contains($stack, 'svelte')) {
             $this->createBasicSvelteKitProject($projectDir, $project);
         } else {
             // Default to Next.js for backward compatibility
@@ -318,9 +319,27 @@ EOT;
     }
 
     /**
-     * Create basic Vite + React + TypeScript project structure
+     * Create basic Vite project structure (React or Vue)
      */
     private function createBasicViteProject(string $projectDir, Project $project): void
+    {
+        $settings = $project->settings ?? [];
+        $stack = strtolower(trim($settings['stack'] ?? ''));
+        
+        // Determine if this is a Vue or React project
+        $isVueProject = $stack === 'vite-vue';
+        
+        if ($isVueProject) {
+            $this->createViteVueProject($projectDir, $project);
+        } else {
+            $this->createViteReactProject($projectDir, $project);
+        }
+    }
+
+    /**
+     * Create basic Vite + React + TypeScript project structure
+     */
+    private function createViteReactProject(string $projectDir, Project $project): void
     {
         // Create package.json
         $packageJson = [
@@ -661,6 +680,257 @@ README.md
 .gitignore
 EOT;
         file_put_contents("{$projectDir}/.dockerignore", $dockerignore);
+    }
+
+    /**
+     * Create basic Vite + Vue + TypeScript project structure
+     */
+    private function createViteVueProject(string $projectDir, Project $project): void
+    {
+        // Create package.json
+        $packageJson = [
+            'name' => strtolower($project->slug),
+            'private' => true,
+            'version' => '0.0.0',
+            'type' => 'module',
+            'scripts' => [
+                'dev' => 'vite',
+                'build' => 'vue-tsc && vite build',
+                'preview' => 'vite preview',
+            ],
+            'dependencies' => [
+                'vue' => '^3.4.0',
+            ],
+            'devDependencies' => [
+                '@vitejs/plugin-vue' => '^5.0.0',
+                'typescript' => '^5.2.0',
+                'vite' => '^5.2.0',
+                'vue-tsc' => '^1.8.0',
+                'tailwindcss' => '^3.4.0',
+                'autoprefixer' => '^10.4.17',
+                'postcss' => '^8.4.35',
+            ],
+        ];
+
+        file_put_contents("{$projectDir}/package.json", json_encode($packageJson, JSON_PRETTY_PRINT));
+
+        // Create index.html
+        $indexHtml = <<<'EOT'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Generated Project</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+EOT;
+        file_put_contents("{$projectDir}/index.html", $indexHtml);
+
+        // Create src directory
+        $srcDir = "{$projectDir}/src";
+        if (! is_dir($srcDir)) {
+            mkdir($srcDir, 0755, true);
+        }
+
+        // Create main.ts
+        $mainTs = <<<'EOT'
+import { createApp } from 'vue'
+import App from './App.vue'
+import './style.css'
+
+createApp(App).mount('#app')
+EOT;
+        file_put_contents("{$srcDir}/main.ts", $mainTs);
+
+        // Create App.vue
+        $appVue = <<<'EOT'
+<template>
+  <div id="app">
+    <header>
+      <h1>Welcome to Your AI-Generated Vue App</h1>
+      <p>This is a Vite + Vue + TypeScript project</p>
+    </header>
+    <main>
+      <div class="content">
+        <h2>Getting Started</h2>
+        <p>Your project is ready to go! Start building amazing Vue applications.</p>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+// Your Vue component logic goes here
+</script>
+
+<style scoped>
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+header {
+  margin-bottom: 2rem;
+}
+
+h1 {
+  color: #42b883;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.content {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 8px;
+  border-left: 4px solid #42b883;
+}
+</style>
+EOT;
+        file_put_contents("{$srcDir}/App.vue", $appVue);
+
+        // Create style.css
+        $styleCss = <<<'EOT'
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  color: white;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+EOT;
+        file_put_contents("{$srcDir}/style.css", $styleCss);
+
+        // Create vite.config.ts
+        $viteConfig = <<<'EOT'
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+  },
+})
+EOT;
+        file_put_contents("{$projectDir}/vite.config.ts", $viteConfig);
+
+        // Create tsconfig.json
+        $tsconfig = [
+            'compilerOptions' => [
+                'target' => 'ES2020',
+                'useDefineForClassFields' => true,
+                'lib' => ['ES2020', 'DOM', 'DOM.Iterable'],
+                'module' => 'ESNext',
+                'skipLibCheck' => true,
+                'moduleResolution' => 'bundler',
+                'allowImportingTsExtensions' => true,
+                'resolveJsonModule' => true,
+                'isolatedModules' => true,
+                'noEmit' => true,
+                'jsx' => 'preserve',
+                'strict' => true,
+                'noUnusedLocals' => true,
+                'noUnusedParameters' => true,
+                'noFallthroughCasesInSwitch' => true,
+            ],
+            'include' => ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.tsx', 'src/**/*.vue'],
+            'references' => [['path' => './tsconfig.node.json']],
+        ];
+        file_put_contents("{$projectDir}/tsconfig.json", json_encode($tsconfig, JSON_PRETTY_PRINT));
+
+        // Create tsconfig.node.json
+        $tsconfigNode = [
+            'compilerOptions' => [
+                'composite' => true,
+                'skipLibCheck' => true,
+                'module' => 'ESNext',
+                'moduleResolution' => 'bundler',
+                'allowSyntheticDefaultImports' => true,
+            ],
+            'include' => ['vite.config.ts'],
+        ];
+        file_put_contents("{$projectDir}/tsconfig.node.json", json_encode($tsconfigNode, JSON_PRETTY_PRINT));
     }
 
     /**

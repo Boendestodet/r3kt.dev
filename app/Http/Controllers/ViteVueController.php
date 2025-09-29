@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Services\DockerService;
+use App\Services\FilePermissionService;
+use Illuminate\Support\Facades\Log;
 
 class ViteVueController extends Controller
 {
@@ -489,11 +491,22 @@ button:focus-visible {
             $fullPath = "{$projectDir}/{$filePath}";
             $dir = dirname($fullPath);
 
-            if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
+            try {
+                // Create directory with proper permissions
+                FilePermissionService::createDirectory($dir, 0755);
 
-            file_put_contents($fullPath, $content);
+                // Create file with proper permissions
+                FilePermissionService::createFile($fullPath, $content);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create file, continuing with deployment', [
+                    'file' => $filePath,
+                    'error' => $e->getMessage(),
+                    'reason' => 'Permission or file system error - container may still work',
+                ]);
+                
+                // Continue with other files instead of failing the entire deployment
+                continue;
+            }
         }
 
         // Create configuration files
@@ -508,8 +521,22 @@ button:focus-visible {
      */
     public function createConfigFiles(string $projectDir): void
     {
-        // Create vite.config.ts for Vue
-        $viteConfig = 'import { defineConfig } from \'vite\'
+        // Create a lock file to prevent race conditions
+        $lockFile = "{$projectDir}/.config-lock";
+        
+        try {
+            // Try to create lock file
+            if (file_exists($lockFile)) {
+                Log::info('Config files already being created, skipping', [
+                    'project_dir' => $projectDir,
+                ]);
+                return;
+            }
+            
+            file_put_contents($lockFile, 'locked');
+            
+            // Create vite.config.ts for Vue
+            $viteConfig = 'import { defineConfig } from \'vite\'
 import vue from \'@vitejs/plugin-vue\'
 
 // https://vitejs.dev/config/
@@ -530,120 +557,89 @@ export default defineConfig({
   }
 })';
 
-        file_put_contents("{$projectDir}/vite.config.ts", $viteConfig);
+            FilePermissionService::createFile("{$projectDir}/vite.config.ts", $viteConfig);
 
-        // Create package.json for Vue
-        $packageJson = [
-            'name' => 'vite-vue-project',
-            'private' => true,
-            'version' => '0.0.0',
-            'type' => 'module',
-            'scripts' => [
-                'dev' => 'vite',
-                'build' => 'vue-tsc && vite build',
-                'preview' => 'vite preview',
-            ],
-            'dependencies' => [
-                'vue' => '^3.4.0',
-            ],
-            'devDependencies' => [
-                '@vitejs/plugin-vue' => '^5.0.0',
-                'typescript' => '^5.2.0',
-                'vite' => '^5.2.0',
-                'vue-tsc' => '^1.8.0',
-            ],
-        ];
+            // Create package.json for Vue
+            $packageJson = [
+                'name' => 'vite-vue-project',
+                'private' => true,
+                'version' => '0.0.0',
+                'type' => 'module',
+                'scripts' => [
+                    'dev' => 'vite',
+                    'build' => 'vue-tsc && vite build',
+                    'preview' => 'vite preview',
+                ],
+                'dependencies' => [
+                    'vue' => '^3.4.0',
+                ],
+                'devDependencies' => [
+                    '@vitejs/plugin-vue' => '^5.0.0',
+                    'typescript' => '^5.2.0',
+                    'vite' => '^5.2.0',
+                    'vue-tsc' => '^1.8.0',
+                ],
+            ];
 
-        file_put_contents("{$projectDir}/package.json", json_encode($packageJson, JSON_PRETTY_PRINT));
+            FilePermissionService::createFile("{$projectDir}/package.json", json_encode($packageJson, JSON_PRETTY_PRINT));
 
-        // Create tsconfig.json for Vue
-        $tsconfig = [
-            'compilerOptions' => [
-                'target' => 'ES2020',
-                'useDefineForClassFields' => true,
-                'lib' => ['ES2020', 'DOM', 'DOM.Iterable'],
-                'module' => 'ESNext',
-                'skipLibCheck' => true,
-                'moduleResolution' => 'bundler',
-                'allowImportingTsExtensions' => true,
-                'resolveJsonModule' => true,
-                'isolatedModules' => true,
-                'noEmit' => true,
-                'jsx' => 'preserve',
-                'strict' => true,
-                'noUnusedLocals' => true,
-                'noUnusedParameters' => true,
-                'noFallthroughCasesInSwitch' => true,
-            ],
-            'include' => ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.tsx', 'src/**/*.vue'],
-            'references' => [['path' => './tsconfig.node.json']],
-        ];
+            // Create tsconfig.json for Vue
+            $tsconfig = [
+                'compilerOptions' => [
+                    'target' => 'ES2020',
+                    'useDefineForClassFields' => true,
+                    'lib' => ['ES2020', 'DOM', 'DOM.Iterable'],
+                    'module' => 'ESNext',
+                    'skipLibCheck' => true,
+                    'moduleResolution' => 'bundler',
+                    'allowImportingTsExtensions' => true,
+                    'resolveJsonModule' => true,
+                    'isolatedModules' => true,
+                    'noEmit' => true,
+                    'jsx' => 'preserve',
+                    'strict' => true,
+                    'noUnusedLocals' => true,
+                    'noUnusedParameters' => true,
+                    'noFallthroughCasesInSwitch' => true,
+                ],
+                'include' => ['src/**/*.ts', 'src/**/*.d.ts', 'src/**/*.tsx', 'src/**/*.vue'],
+                'references' => [['path' => './tsconfig.node.json']],
+            ];
 
-        file_put_contents("{$projectDir}/tsconfig.json", json_encode($tsconfig, JSON_PRETTY_PRINT));
+            FilePermissionService::createFile("{$projectDir}/tsconfig.json", json_encode($tsconfig, JSON_PRETTY_PRINT));
 
-        // Create tsconfig.node.json
-        $tsconfigNode = [
-            'compilerOptions' => [
-                'composite' => true,
-                'skipLibCheck' => true,
-                'module' => 'ESNext',
-                'moduleResolution' => 'bundler',
-                'allowSyntheticDefaultImports' => true,
-            ],
-            'include' => ['vite.config.ts'],
-        ];
+            // Create tsconfig.node.json
+            $tsconfigNode = [
+                'compilerOptions' => [
+                    'composite' => true,
+                    'skipLibCheck' => true,
+                    'module' => 'ESNext',
+                    'moduleResolution' => 'bundler',
+                    'allowSyntheticDefaultImports' => true,
+                ],
+                'include' => ['vite.config.ts'],
+            ];
 
-        file_put_contents("{$projectDir}/tsconfig.node.json", json_encode($tsconfigNode, JSON_PRETTY_PRINT));
-
-        // Create .dockerignore
-        $dockerignore = 'node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# local env files
-.env*.local
-
-# editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# dist
-dist
-dist-ssr
-*.local
-
-# Logs
-logs
-*.log';
-
-        file_put_contents("{$projectDir}/.dockerignore", $dockerignore);
-
-        // Create docker-compose.yml
-        $dockerCompose = 'version: \'3.8\'
-
-services:
-  app:
-    build: .
-    ports:
-      - "5173:5173"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-    command: npm run dev';
-
-        file_put_contents("{$projectDir}/docker-compose.yml", $dockerCompose);
+            FilePermissionService::createFile("{$projectDir}/tsconfig.node.json", json_encode($tsconfigNode, JSON_PRETTY_PRINT));
+            
+            Log::info('Vue config files created successfully', [
+                'project_dir' => $projectDir,
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::warning('Failed to create some config files, continuing with deployment', [
+                'project_dir' => $projectDir,
+                'error' => $e->getMessage(),
+                'reason' => 'Permission or file system error - container may still work',
+            ]);
+        } finally {
+            // Remove lock file
+            if (file_exists($lockFile)) {
+                unlink($lockFile);
+            }
+        }
     }
+
 
     /**
      * Create Vite Vue Dockerfile

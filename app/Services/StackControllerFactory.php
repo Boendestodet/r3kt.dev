@@ -83,9 +83,16 @@ class StackControllerFactory
             'vite' => ['vite'], // Generic vite fallback
         ];
 
-        // Check for partial matches
+        // Check for exact matches first, then partial matches
         foreach ($stackMappings as $type => $patterns) {
             foreach ($patterns as $pattern) {
+                // For specific patterns like 'vite-vue', 'vite-react', use exact matching
+                if (str_contains($pattern, '-') && $stack === $pattern) {
+                    Log::info("Detected {$type} project type from exact stack match: {$stack}");
+                    return $type;
+                }
+                
+                // For other patterns, use partial matching
                 if (str_contains($stack, $pattern)) {
                     Log::info("Detected {$type} project type from stack: {$stack}");
 

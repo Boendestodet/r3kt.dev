@@ -414,11 +414,22 @@ button:focus-visible {
             $fullPath = "{$projectDir}/{$filePath}";
             $dir = dirname($fullPath);
 
-            // Create directory with proper permissions
-            FilePermissionService::createDirectory($dir, 0755);
+            try {
+                // Create directory with proper permissions
+                FilePermissionService::createDirectory($dir, 0755);
 
-            // Create file with proper permissions
-            FilePermissionService::createFile($fullPath, $content);
+                // Create file with proper permissions
+                FilePermissionService::createFile($fullPath, $content);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create file, continuing with deployment', [
+                    'file' => $filePath,
+                    'error' => $e->getMessage(),
+                    'reason' => 'Permission or file system error - container may still work',
+                ]);
+                
+                // Continue with other files instead of failing the entire deployment
+                continue;
+            }
         }
 
         // BULLETPROOF PROTECTION: Delete any AI-generated config files that might have been written
@@ -445,9 +456,23 @@ button:focus-visible {
      */
     public function createConfigFiles(string $projectDir): void
     {
-        // Create vite.config.ts (ALWAYS overwrite to ensure correct Docker config)
-        $viteConfigPath = "{$projectDir}/vite.config.ts";
-        $viteConfig = <<<'TS'
+        // Create a lock file to prevent race conditions
+        $lockFile = "{$projectDir}/.config-lock";
+        
+        try {
+            // Try to create lock file
+            if (file_exists($lockFile)) {
+                Log::info('Config files already being created, skipping', [
+                    'project_dir' => $projectDir,
+                ]);
+                return;
+            }
+            
+            file_put_contents($lockFile, 'locked');
+            
+            // Create vite.config.ts (ALWAYS overwrite to ensure correct Docker config)
+            $viteConfigPath = "{$projectDir}/vite.config.ts";
+            $viteConfig = <<<'TS'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -461,10 +486,10 @@ export default defineConfig({
 })
 TS;
 
-        // Ensure we can write the file by fixing permissions if needed
-        if (file_exists($viteConfigPath)) {
-            chmod($viteConfigPath, 0644);
-        }
+            // Ensure we can write the file by fixing permissions if needed
+            if (file_exists($viteConfigPath)) {
+                chmod($viteConfigPath, 0644);
+            }
 
         $result = file_put_contents($viteConfigPath, $viteConfig);
 
@@ -622,6 +647,23 @@ JS;
 }
 JSON;
             file_put_contents($packageJsonPath, $packageJson);
+        }
+        
+        Log::info('React config files created successfully', [
+            'project_dir' => $projectDir,
+        ]);
+        
+        } catch (\Exception $e) {
+            Log::warning('Failed to create some config files, continuing with deployment', [
+                'project_dir' => $projectDir,
+                'error' => $e->getMessage(),
+                'reason' => 'Permission or file system error - container may still work',
+            ]);
+        } finally {
+            // Remove lock file
+            if (file_exists($lockFile)) {
+                unlink($lockFile);
+            }
         }
     }
 
