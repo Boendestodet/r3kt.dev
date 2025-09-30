@@ -284,7 +284,7 @@ class DockerService
 
             $projectDir = storage_path("app/projects/{$container->project->id}");
             $imageName = "lovable-project-{$container->project->id}";
-            $containerName = "lovable-container-{$container->project->id}";
+            $containerName = "lovable-container-{$container->id}";
 
             // Ensure project directory exists
             if (! is_dir($projectDir)) {

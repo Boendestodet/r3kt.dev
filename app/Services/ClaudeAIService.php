@@ -86,4 +86,59 @@ class ClaudeAIService
     {
         return config('services.claude.model', 'claude-3-sonnet-20240229');
     }
+
+    /**
+     * Send a conversational message to Claude
+     */
+    public function sendConversationalMessage(string $message, string $projectName = ''): array
+    {
+        try {
+            if (!$this->isConfigured()) {
+                return [
+                    'success' => false,
+                    'error' => 'Claude API is not configured',
+                ];
+            }
+
+            $factory = new Factory;
+            $factory->withApiKey(config('services.claude.api_key'));
+            $factory->withHeaders([
+                'Content-Type' => 'application/json',
+                'x-api-key' => config('services.claude.api_key'),
+                'anthropic-version' => '2023-06-01',
+            ]);
+            $client = $factory->make();
+
+            // The message now includes project context from ChatService
+            $response = $client->chat()->create([
+                'model' => config('services.claude.model', 'claude-3-5-sonnet-20241022'),
+                'max_tokens' => 1500,
+                'temperature' => 0.7,
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => $message,
+                    ],
+                ],
+            ]);
+
+            $content = $response->choices[0]->message->content ?? 'I received your message and I\'m here to help!';
+
+            // Extract token usage if available
+            $inputTokens = $response->usage->inputTokens ?? 0;
+            $outputTokens = $response->usage->outputTokens ?? 0;
+
+            return [
+                'success' => true,
+                'response' => $content,
+                'input_tokens' => $inputTokens,
+                'output_tokens' => $outputTokens,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }

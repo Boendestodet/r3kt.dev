@@ -801,21 +801,24 @@ class ProjectCleanupCommand extends Command
                 // Count records before deletion
                 $containerCount = $project->containers()->count();
                 $promptCount = $project->prompts()->count();
-                $totalRecords = $containerCount + $promptCount + 1; // +1 for the project itself
+                $chatCount = $project->chatConversations()->count();
+                $totalRecords = $containerCount + $promptCount + $chatCount + 1; // +1 for the project itself
 
                 // Delete related records first (due to foreign key constraints)
                 $project->containers()->delete();
                 $project->prompts()->delete();
+                $project->chatConversations()->delete();
 
                 // Delete the project
                 $project->delete();
 
-                $this->line('    ✅ Removed project and related records');
+                $this->line('    ✅ Removed project and related records (containers, prompts, chats)');
                 $results['records_removed'] = $totalRecords;
             } else {
                 $containerCount = $project->containers()->count();
                 $promptCount = $project->prompts()->count();
-                $totalRecords = $containerCount + $promptCount + 1;
+                $chatCount = $project->chatConversations()->count();
+                $totalRecords = $containerCount + $promptCount + $chatCount + 1;
 
                 $this->line("    🔍 Would remove project and {$totalRecords} related records");
                 $results['records_removed'] = $totalRecords;

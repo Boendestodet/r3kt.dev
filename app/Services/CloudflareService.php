@@ -40,15 +40,43 @@ class CloudflareService
 
         try {
             $ipAddress = $ipAddress ?: $this->getServerIpAddress();
-            $recordName = $subdomain;
-            $recordType = 'A';
+            
+            // Try with Global API Key format first
+            $response = Http::withHeaders([
+                'X-Auth-Email' => config('services.cloudflare.email', 'your-email@example.com'),
+                'X-Auth-Key' => $this->apiToken,
+                'Content-Type' => 'application/json',
+            ])->post("{$this->baseUrl}/zones/{$this->zoneId}/dns_records", [
+                'type' => 'A',
+                'name' => $subdomain,
+                'content' => $ipAddress,
+                'ttl' => 1, // Auto TTL
+                'proxied' => true, // Enable Cloudflare proxy
+            ]);
 
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                Log::info('DNS record created successfully', [
+                    'subdomain' => $subdomain,
+                    'record_id' => $data['result']['id'],
+                    'ip_address' => $ipAddress
+                ]);
+
+                return [
+                    'success' => true,
+                    'record_id' => $data['result']['id'],
+                    'message' => 'DNS record created successfully'
+                ];
+            }
+
+            // If Global API Key fails, try with Bearer token
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiToken,
                 'Content-Type' => 'application/json',
             ])->post("{$this->baseUrl}/zones/{$this->zoneId}/dns_records", [
-                'type' => $recordType,
-                'name' => $recordName,
+                'type' => 'A',
+                'name' => $subdomain,
                 'content' => $ipAddress,
                 'ttl' => 1, // Auto TTL
                 'proxied' => true, // Enable Cloudflare proxy
@@ -109,6 +137,33 @@ class CloudflareService
         try {
             $ipAddress = $ipAddress ?: $this->getServerIpAddress();
 
+            // Try with Global API Key format first
+            $response = Http::withHeaders([
+                'X-Auth-Email' => config('services.cloudflare.email'),
+                'X-Auth-Key' => $this->apiToken,
+                'Content-Type' => 'application/json',
+            ])->put("{$this->baseUrl}/zones/{$this->zoneId}/dns_records/{$recordId}", [
+                'type' => 'A',
+                'name' => $subdomain,
+                'content' => $ipAddress,
+                'ttl' => 1,
+                'proxied' => true,
+            ]);
+
+            if ($response->successful()) {
+                Log::info('DNS record updated successfully', [
+                    'subdomain' => $subdomain,
+                    'record_id' => $recordId,
+                    'ip_address' => $ipAddress
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'DNS record updated successfully'
+                ];
+            }
+
+            // If Global API Key fails, try with Bearer token
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiToken,
                 'Content-Type' => 'application/json',
@@ -172,6 +227,24 @@ class CloudflareService
         }
 
         try {
+            // Try with Global API Key format first
+            $response = Http::withHeaders([
+                'X-Auth-Email' => config('services.cloudflare.email'),
+                'X-Auth-Key' => $this->apiToken,
+            ])->delete("{$this->baseUrl}/zones/{$this->zoneId}/dns_records/{$recordId}");
+
+            if ($response->successful()) {
+                Log::info('DNS record deleted successfully', [
+                    'record_id' => $recordId
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'DNS record deleted successfully'
+                ];
+            }
+
+            // If Global API Key fails, try with Bearer token
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiToken,
             ])->delete("{$this->baseUrl}/zones/{$this->zoneId}/dns_records/{$recordId}");
@@ -224,6 +297,24 @@ class CloudflareService
         }
 
         try {
+            // Try with Global API Key format first
+            $response = Http::withHeaders([
+                'X-Auth-Email' => config('services.cloudflare.email'),
+                'X-Auth-Key' => $this->apiToken,
+            ])->get("{$this->baseUrl}/zones/{$this->zoneId}/dns_records", [
+                'name' => $subdomain,
+                'type' => 'A'
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return [
+                    'success' => true,
+                    'records' => $data['result'] ?? []
+                ];
+            }
+
+            // If Global API Key fails, try with Bearer token
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiToken,
             ])->get("{$this->baseUrl}/zones/{$this->zoneId}/dns_records", [
@@ -266,6 +357,27 @@ class CloudflareService
         }
 
         try {
+            // Try with Global API Key format first
+            $response = Http::withHeaders([
+                'X-Auth-Email' => config('services.cloudflare.email'),
+                'X-Auth-Key' => $this->apiToken,
+                'Content-Type' => 'application/json',
+            ])->post("{$this->baseUrl}/zones/{$this->zoneId}/purge_cache", [
+                'purge_everything' => true
+            ]);
+
+            if ($response->successful()) {
+                Log::info('Cache purged successfully', [
+                    'subdomain' => $subdomain
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Cache purged successfully'
+                ];
+            }
+
+            // If Global API Key fails, try with Bearer token
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiToken,
                 'Content-Type' => 'application/json',
@@ -316,13 +428,17 @@ class CloudflareService
         if (!$this->isConfigured()) {
             return [
                 'success' => false,
-                'message' => 'Cloudflare not configured'
+                'message' => 'Cloudflare not configured',
+                'configured' => false
             ];
         }
 
         try {
+            // Try with Global API Key format first
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiToken,
+                'X-Auth-Email' => config('services.cloudflare.email', 'your-email@example.com'),
+                'X-Auth-Key' => $this->apiToken,
+                'Content-Type' => 'application/json',
             ])->get("{$this->baseUrl}/zones/{$this->zoneId}");
 
             if ($response->successful()) {
@@ -330,20 +446,44 @@ class CloudflareService
                 return [
                     'success' => true,
                     'message' => 'Connection successful',
-                    'zone_name' => $data['result']['name'] ?? 'Unknown'
+                    'zone_name' => $data['result']['name'] ?? 'Unknown',
+                    'configured' => true
+                ];
+            }
+
+            // If Global API Key fails, try with Bearer token
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Content-Type' => 'application/json',
+            ])->get("{$this->baseUrl}/zones/{$this->zoneId}");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return [
+                    'success' => true,
+                    'message' => 'Connection successful',
+                    'zone_name' => $data['result']['name'] ?? 'Unknown',
+                    'configured' => true
                 ];
             }
 
             $error = $response->json();
             return [
                 'success' => false,
-                'message' => $error['errors'][0]['message'] ?? 'Connection failed'
+                'message' => $error['errors'][0]['message'] ?? 'Connection failed',
+                'configured' => false
             ];
 
         } catch (\Exception $e) {
+            Log::error('Cloudflare connection test failed', [
+                'error' => $e->getMessage(),
+                'zone_id' => $this->zoneId
+            ]);
+
             return [
                 'success' => false,
-                'message' => 'Connection error: ' . $e->getMessage()
+                'message' => 'Connection error: ' . $e->getMessage(),
+                'configured' => false
             ];
         }
     }

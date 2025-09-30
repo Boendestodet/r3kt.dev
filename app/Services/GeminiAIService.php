@@ -108,4 +108,62 @@ class GeminiAIService
         // Rough estimation: 1 token ≈ 4 characters for English text
         return (int) ceil(strlen($text) / 4);
     }
+
+    /**
+     * Send a conversational message to Gemini
+     */
+    public function sendConversationalMessage(string $message, string $projectName = ''): array
+    {
+        try {
+            if (!$this->isConfigured()) {
+                return [
+                    'success' => false,
+                    'error' => 'Gemini API is not configured',
+                ];
+            }
+
+            // The message now includes project context from ChatService
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post('https://generativelanguage.googleapis.com/v1beta/models/'.config('services.gemini.model').':generateContent?key='.config('services.gemini.api_key'), [
+                'contents' => [
+                    [
+                        'parts' => [
+                            [
+                                'text' => $message,
+                            ],
+                        ],
+                    ],
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'maxOutputTokens' => 1500,
+                ],
+            ]);
+
+            if (!$response->successful()) {
+                throw new \Exception('Gemini API request failed: '.$response->body());
+            }
+
+            $data = $response->json();
+            $content = $data['candidates'][0]['content']['parts'][0]['text'] ?? 'I received your message and I\'m here to help!';
+
+            // Extract token usage if available
+            $usageMetadata = $data['usageMetadata'] ?? [];
+            $inputTokens = $usageMetadata['promptTokenCount'] ?? 0;
+            $outputTokens = $usageMetadata['candidatesTokenCount'] ?? 0;
+
+            return [
+                'success' => true,
+                'response' => $content,
+                'input_tokens' => $inputTokens,
+                'output_tokens' => $outputTokens,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }

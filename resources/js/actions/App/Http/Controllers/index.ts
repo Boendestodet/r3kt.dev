@@ -9,6 +9,7 @@ import BalanceController from './BalanceController'
 import DockerSystemController from './DockerSystemController'
 import ProjectDeploymentController from './ProjectDeploymentController'
 import SubdomainController from './SubdomainController'
+import ChatController from './ChatController'
 import Settings from './Settings'
 import Auth from './Auth'
 
@@ -24,6 +25,7 @@ const Controllers = {
     DockerSystemController,
     ProjectDeploymentController,
     SubdomainController,
+    ChatController,
     Settings,
     Auth,
 }

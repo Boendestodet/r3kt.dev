@@ -48,7 +48,7 @@ interface Props {
   balanceInfo: BalanceInfo
 }
 
-export default function R3ktSandboxPage({ projects, balanceInfo }: Props) {
+export default function R3ktSandboxPage({ projects, balanceInfo: initialBalanceInfo }: Props) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null) // Changed to null initially
   const [selectedStack, setSelectedStack] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("Modern Web")
@@ -63,6 +63,9 @@ export default function R3ktSandboxPage({ projects, balanceInfo }: Props) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarHidden, setSidebarHidden] = useState(false)
   const [showDeploymentModal, setShowDeploymentModal] = useState(false)
+  
+  // Balance info state
+  const [balanceInfo, setBalanceInfo] = useState<BalanceInfo>(initialBalanceInfo)
   
   // New project creation states
   const [projectName, setProjectName] = useState("")

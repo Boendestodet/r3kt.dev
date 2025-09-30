@@ -77,18 +77,26 @@ class AIWebsiteGenerator
                     $generatedProject = $result['project'];
 
                     // Update the prompt with the response
+                    $metadata = [
+                        'model' => $result['model'],
+                        'temperature' => $provider['temperature'],
+                        'max_tokens' => $provider['max_tokens'],
+                        'project_type' => $projectType,
+                        'ai_provider' => $provider['name'],
+                    ];
+
+                    // Store chat ID for any AI provider that supports chat
+                    if (isset($result['chat_id'])) {
+                        $this->cursorAIService->storeChatIdInProject($prompt->project, $result['chat_id']);
+                        $metadata['chat_id'] = $result['chat_id'];
+                    }
+
                     $prompt->update([
                         'response' => json_encode($generatedProject),
                         'status' => 'completed',
                         'processed_at' => now(),
                         'tokens_used' => $result['tokens_used'],
-                        'metadata' => [
-                            'model' => $result['model'],
-                            'temperature' => $provider['temperature'],
-                            'max_tokens' => $provider['max_tokens'],
-                            'project_type' => $projectType,
-                            'ai_provider' => $provider['name'],
-                        ],
+                        'metadata' => $metadata,
                     ]);
 
                     // Deduct cost from user's balance

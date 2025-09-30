@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Head, router } from "@inertiajs/react"
 import { Textarea } from '@/components/ui/textarea'
+import MessageContent from '../../components/MessageContent'
 
 const Terminal = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,6 +115,15 @@ interface ChatMessage {
   content: string
   timestamp: Date
   isTyping?: boolean
+  cost?: string
+  tokens?: number
+  balance_info?: {
+    balance: number
+    formatted_balance: string
+    total_spent: number
+    formatted_total_spent: string
+    can_generate: boolean
+  }
 }
 
 interface Container {
@@ -147,6 +157,13 @@ interface Props {
     containers: Container[]
     prompts: Prompt[]
     generated_code?: string
+    settings?: {
+      ai_model?: string
+      project_type?: string
+      framework?: string
+      chat_id?: string
+      [key: string]: any
+    }
   }
   flash?: {
     success?: string
@@ -341,37 +358,12 @@ export default function SandboxPage({ project, flash }: Props) {
   const [fileSystem, setFileSystem] = useState<FileNode[]>(fileStructure)
   const [isEnhancing, setIsEnhancing] = useState(false)
 
-  // Initialize chat with existing prompts
+  // Initialize chat as empty - chat is separate from prompts
   useEffect(() => {
-    const initialMessages: ChatMessage[] = project.prompts.map(prompt => ({
-      id: prompt.id.toString(),
-      type: 'user' as const,
-      content: prompt.prompt,
-      timestamp: new Date(prompt.created_at)
-    }))
-
-    // Add AI responses if available
-    const messagesWithResponses: ChatMessage[] = []
-    project.prompts.forEach(prompt => {
-      messagesWithResponses.push({
-        id: `user-${prompt.id}`,
-        type: 'user' as const,
-        content: prompt.prompt,
-        timestamp: new Date(prompt.created_at)
-      })
-      
-      if (prompt.response) {
-        messagesWithResponses.push({
-          id: `ai-${prompt.id}`,
-          type: 'ai' as const,
-          content: prompt.response,
-          timestamp: new Date(prompt.updated_at)
-        })
-      }
-    })
-
-    setChatMessages(messagesWithResponses)
-  }, [project.prompts])
+    // Chat should start empty, not with prompts
+    // Prompts are for technical building, chat is for conversation
+    setChatMessages([])
+  }, [])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-resize textarea function
@@ -768,6 +760,237 @@ export default function SandboxPage({ project, flash }: Props) {
     }
   }
 
+  // Check if project has AI chat
+  const [hasAIChat, setHasAIChat] = useState(false)
+  const [aiChatId, setAiChatId] = useState<string | null>(null)
+
+  useEffect(() => {
+    checkChatStatus()
+  }, [])
+
+  const checkChatStatus = async () => {
+    try {
+      const response = await fetch(`/api/projects/${project.id}/chat/status`)
+      const data = await response.json()
+      
+      if (data.has_chat) {
+        setHasAIChat(true)
+        setAiChatId(data.chat_id)
+        loadAIChatHistory(data.chat_id)
+      }
+    } catch (error) {
+      console.error('Failed to check chat status:', error)
+    }
+  }
+
+  const loadAIChatHistory = async (chatId?: string) => {
+    const currentChatId = chatId || aiChatId
+    if (!currentChatId) return
+
+    try {
+      const response = await fetch(`/api/projects/${project.id}/chat/conversation?chat_id=${currentChatId}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        // Use messages from database
+        if (data.messages && data.messages.length > 0) {
+          const conversationMessages = data.messages.map((msg: any) => ({
+            id: Date.now().toString() + Math.random(),
+            type: msg.role,
+            content: msg.content,
+            timestamp: new Date(msg.timestamp)
+          }))
+          setChatMessages(conversationMessages)
+        } else {
+          // No messages yet
+          setChatMessages([])
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error)
+    }
+  }
+
+  const parseCursorConversation = (conversation: string): ChatMessage[] => {
+    // Parse Cursor CLI conversation format to extract meaningful messages
+    const messages: ChatMessage[] = []
+    
+    try {
+      // Split by JSON objects to find individual messages
+      const jsonObjects = conversation.split('}{').map((obj, index) => {
+        if (index === 0) return obj
+        if (index === conversation.split('}{').length - 1) return obj
+        return '{' + obj + '}'
+      })
+
+      for (const jsonStr of jsonObjects) {
+        try {
+          const cleanJson = jsonStr.replace(/^[^{]*/, '').replace(/[^}]*$/, '')
+          if (!cleanJson.includes('"type"') && !cleanJson.includes('"role"')) continue
+          
+          const parsed = JSON.parse(cleanJson)
+          
+          if (parsed.type === 'assistant' && parsed.message?.content) {
+            // Extract meaningful content from assistant messages
+            const content = Array.isArray(parsed.message.content) 
+              ? parsed.message.content.map(c => c.text || c).join('')
+              : parsed.message.content
+
+            if (content && content.trim()) {
+              messages.push({
+                id: parsed.session_id + '_' + Date.now(),
+                type: 'ai',
+                content: extractMeaningfulContent(content),
+                timestamp: new Date()
+              })
+            }
+          } else if (parsed.type === 'user' && parsed.message?.content) {
+            // Extract user messages
+            const content = Array.isArray(parsed.message.content) 
+              ? parsed.message.content.map(c => c.text || c).join('')
+              : parsed.message.content
+
+            if (content && content.trim()) {
+              messages.push({
+                id: parsed.session_id + '_' + Date.now(),
+                type: 'user',
+                content: content.trim(),
+                timestamp: new Date()
+              })
+            }
+          }
+        } catch (e) {
+          // Skip invalid JSON objects
+          continue
+        }
+      }
+
+      // If no structured messages found, try to extract from raw text
+      if (messages.length === 0) {
+        const lines = conversation.split('\n')
+        let currentMessage = ''
+        let currentRole: 'user' | 'ai' = 'ai'
+
+        for (const line of lines) {
+          if (line.includes('"role":"user"') || line.includes('"type":"user"')) {
+            if (currentMessage.trim()) {
+              messages.push({
+                id: Date.now().toString(),
+                type: currentRole,
+                content: extractMeaningfulContent(currentMessage.trim()),
+                timestamp: new Date()
+              })
+            }
+            currentMessage = ''
+            currentRole = 'user'
+          } else if (line.includes('"role":"assistant"') || line.includes('"type":"assistant"')) {
+            if (currentMessage.trim()) {
+              messages.push({
+                id: Date.now().toString(),
+                type: currentRole,
+                content: extractMeaningfulContent(currentMessage.trim()),
+                timestamp: new Date()
+              })
+            }
+            currentMessage = ''
+            currentRole = 'ai'
+          } else if (line.trim() && !line.startsWith('{') && !line.startsWith('}')) {
+            currentMessage += line + '\n'
+          }
+        }
+
+        if (currentMessage.trim()) {
+          messages.push({
+            id: Date.now().toString(),
+            type: currentRole,
+            content: this.extractMeaningfulContent(currentMessage.trim()),
+            timestamp: new Date()
+          })
+        }
+      }
+
+    } catch (error) {
+      console.error('Failed to parse conversation:', error)
+    }
+
+    return messages
+  }
+
+  const extractMeaningfulContent = (content: string): string => {
+    // Extract meaningful conversation content, removing technical details
+    let meaningful = content
+
+    // Remove JSON code blocks
+    meaningful = meaningful.replace(/```json[\s\S]*?```/g, '')
+    meaningful = meaningful.replace(/```[\s\S]*?```/g, '')
+
+    // Remove file paths and technical details
+    meaningful = meaningful.replace(/[^\s]*\.(tsx?|jsx?|css|json|html|vue|svelte|astro)[^\s]*/g, '')
+    
+    // Remove excessive whitespace
+    meaningful = meaningful.replace(/\s+/g, ' ').trim()
+
+    // Extract action descriptions
+    const actionPatterns = [
+      /I'll\s+([^.!?]+[.!?])/gi,
+      /Let me\s+([^.!?]+[.!?])/gi,
+      /I'm going to\s+([^.!?]+[.!?])/gi,
+      /I'll create\s+([^.!?]+[.!?])/gi,
+      /I'll add\s+([^.!?]+[.!?])/gi,
+      /I'll update\s+([^.!?]+[.!?])/gi,
+    ]
+
+    let extractedActions = ''
+    for (const pattern of actionPatterns) {
+      const matches = meaningful.match(pattern)
+      if (matches) {
+        extractedActions += matches.join(' ') + ' '
+      }
+    }
+
+    // If we found specific actions, use those; otherwise use the cleaned content
+    if (extractedActions.trim()) {
+      return extractedActions.trim()
+    }
+
+    // If content is too technical, provide a summary
+    if (meaningful.length > 200 && meaningful.includes('{') && meaningful.includes('}')) {
+      return 'I\'ve processed your request and made the necessary changes to your project.'
+    }
+
+    return meaningful || 'I\'ve completed the requested changes.'
+  }
+
+  const createAIChatSession = async () => {
+    try {
+      const response = await fetch(`/api/projects/${project.id}/chat/create-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setHasAIChat(true)
+        setAiChatId(data.chat_id)
+        
+        // Add welcome message
+        const welcomeMessage: ChatMessage = {
+          id: 'welcome',
+          type: 'ai',
+          content: 'Hello! I\'m your AI assistant. How can I help you build your project today?',
+          timestamp: new Date()
+        }
+        setChatMessages([welcomeMessage])
+      }
+    } catch (error) {
+      console.error('Failed to create chat session:', error)
+    }
+  }
+
   // Chat functionality
   const sendMessage = async (message: string) => {
     if (!message.trim() || isAiTyping) return
@@ -783,38 +1006,113 @@ export default function SandboxPage({ project, flash }: Props) {
     setChatInput('')
     setIsAiTyping(true)
 
-    // Create a real prompt in the database
-    router.post(`/projects/${project.id}/prompts`, {
-      prompt: message
-    }, {
-      onSuccess: (page) => {
-        // Get the created prompt from the response
-        const prompt = (page.props as any)?.flash?.prompt
-        if (prompt) {
+    // Use AI chat if available, otherwise fall back to prompt system
+    if (hasAIChat && aiChatId) {
+      try {
+        // Map AI model to provider (same logic as backend)
+        // Fallback to project.model if settings.ai_model is not available
+        const aiModel = project.settings?.ai_model || project.model || 'cursor-cli'
+        const providerMapping: Record<string, string> = {
+          'gpt-4': 'openai',
+          'gpt-4o': 'openai',
+          'gpt-3.5-turbo': 'openai',
+          'claude-3-5-sonnet': 'claude',
+          'claude-3-opus': 'claude',
+          'claude-3-sonnet': 'claude',
+          'claude-3-haiku': 'claude',
+          'Claude Code': 'claude',
+          'gemini-2.0-flash': 'gemini',
+          'gemini-1.5-pro': 'gemini',
+          'gemini-1.5-flash': 'gemini',
+          'cursor-cli': 'cursor-cli',
+        }
+        const provider = providerMapping[aiModel] || 'cursor-cli'
+
+        const response = await fetch(`/api/projects/${project.id}/chat/message`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+          },
+          body: JSON.stringify({ 
+            message,
+            chat_id: aiChatId,
+            provider: provider
+          }),
+        })
+        
+        const data = await response.json()
+        
+        if (data.success) {
           const aiMessage: ChatMessage = {
-            id: prompt.id.toString(),
+            id: (Date.now() + 1).toString(),
             type: 'ai',
-            content: prompt.response || 'I\'m processing your request...',
-            timestamp: new Date(prompt.created_at)
+            content: extractMeaningfulContent(data.response || 'I received your message but couldn\'t generate a response.'),
+            timestamp: new Date(),
+            cost: data.cost,
+            tokens: data.tokens,
+            balance_info: data.balance_info
           }
           
           setChatMessages(prev => [...prev, aiMessage])
+        } else {
+          const errorMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: `Error: ${data.error || 'Failed to send message'}`,
+            timestamp: new Date()
+          }
+          
+          setChatMessages(prev => [...prev, errorMessage])
         }
-        setIsAiTyping(false)
-      },
-      onError: (errors) => {
-        console.error('Failed to create prompt:', errors)
+      } catch (error) {
+        console.error('Failed to send message to Cursor chat:', error)
+        
         const errorMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           type: 'ai',
-          content: 'Sorry, I encountered an error processing your request. Please try again.',
+          content: 'Sorry, I encountered an error. Please try again.',
           timestamp: new Date()
         }
         
         setChatMessages(prev => [...prev, errorMessage])
+      } finally {
         setIsAiTyping(false)
       }
-    })
+    } else {
+      // Fallback to prompt system
+      router.post(`/projects/${project.id}/prompts`, {
+        prompt: message
+      }, {
+        onSuccess: (page) => {
+          // Get the created prompt from the response
+          const prompt = (page.props as any)?.flash?.prompt
+          if (prompt) {
+            const aiMessage: ChatMessage = {
+              id: prompt.id.toString(),
+              type: 'ai',
+              content: prompt.response || 'I\'m processing your request...',
+              timestamp: new Date(prompt.created_at)
+            }
+            
+            setChatMessages(prev => [...prev, aiMessage])
+          }
+          setIsAiTyping(false)
+        },
+        onError: (errors) => {
+          console.error('Failed to create prompt:', errors)
+          const errorMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: 'Sorry, I encountered an error processing your request. Please try again.',
+            timestamp: new Date()
+          }
+          
+          setChatMessages(prev => [...prev, errorMessage])
+          setIsAiTyping(false)
+        }
+      })
+    }
   }
 
   const generateAiResponse = (message: string): string => {
@@ -1558,12 +1856,26 @@ Please provide a complete, working implementation with examples and usage instru
                   </div>
 
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {chatMessages.length === 0 && (
+                  <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                    {chatMessages.length === 0 && !hasAIChat && (
                       <div className="text-center py-8">
                         <Bot className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                         <p className="text-slate-400 mb-2">Start a conversation with AI</p>
-                        <p className="text-sm text-slate-500">Ask me to build components, add features, or help with styling</p>
+                        <p className="text-sm text-slate-500 mb-4">Chat about your project goals, features, and ideas. This is separate from technical building.</p>
+                        <button
+                          onClick={createAIChatSession}
+                          className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg transition-colors"
+                        >
+                          Start AI Chat
+                        </button>
+                      </div>
+                    )}
+                    
+                    {chatMessages.length === 0 && hasAIChat && (
+                      <div className="text-center py-8">
+                        <Bot className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                        <p className="text-slate-400 mb-2">AI Chat Ready</p>
+                        <p className="text-sm text-slate-500">Type a message below to discuss your project goals and ideas</p>
                       </div>
                     )}
                     
@@ -1579,19 +1891,34 @@ Please provide a complete, working implementation with examples and usage instru
                         )}
                         
                         <div
-                          className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                          className={`max-w-[85%] rounded-lg px-4 py-3 ${
                             message.type === 'user'
                               ? 'bg-orange-500 text-white'
                               : 'bg-slate-700 text-slate-200'
                           }`}
                         >
-                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                            {message.content}
-                          </div>
-                          <div className={`text-xs mt-2 ${
+                          <MessageContent content={message.content} />
+                          <div className={`text-xs mt-3 flex items-center justify-between ${
                             message.type === 'user' ? 'text-orange-200' : 'text-slate-400'
                           }`}>
-                            {message.timestamp.toLocaleTimeString()}
+                            <span>{message.timestamp.toLocaleTimeString()}</span>
+                            {message.type === 'ai' && message.cost && (
+                              <div className="flex items-center gap-2 text-xs">
+                                {message.tokens && (
+                                  <span className="px-2 py-1 bg-slate-600 rounded text-slate-300">
+                                    {message.tokens} tokens
+                                  </span>
+                                )}
+                                <span className="px-2 py-1 bg-green-600 rounded text-green-100">
+                                  {message.cost}
+                                </span>
+                                {message.balance_info && (
+                                  <span className="px-2 py-1 bg-blue-600 rounded text-blue-100">
+                                    Balance: {message.balance_info.formatted_balance}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -1660,7 +1987,7 @@ Please provide a complete, working implementation with examples and usage instru
                         ref={textareaRef}
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="Tell me what you want to build..."
+                        placeholder="Chat about your project goals, features, and ideas..."
                         className="flex-1 bg-slate-700/50 text-white placeholder-slate-400 focus:ring-0 focus:shadow-lg focus:shadow-orange-500/25 resize-none min-h-[44px] max-h-[512px] overflow-hidden"
                         style={{
                           border: '1px solid rgba(249, 115, 22, 0.3)',

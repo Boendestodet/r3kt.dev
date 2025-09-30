@@ -9,6 +9,7 @@ use App\Services\BalanceService;
 use App\Services\CollaborationService;
 use App\Services\DockerService;
 use App\Services\FilePermissionService;
+use App\Services\ChatService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,8 @@ class ProjectController extends Controller
     public function __construct(
         private CollaborationService $collaborationService,
         private DockerService $dockerService,
-        private BalanceService $balanceService
+        private BalanceService $balanceService,
+        private ChatService $chatService
     ) {
         //
     }
@@ -99,6 +101,9 @@ class ProjectController extends Controller
         // Set up project directory and basic Docker files
         $this->setupProjectFiles($project);
 
+        // Create a chat session for the new project
+        $this->createChatSessionForProject($project);
+
         // For Inertia requests, return back with the project data in props
         if (request()->header('X-Inertia')) {
             $user = auth()->user();
@@ -130,6 +135,65 @@ class ProjectController extends Controller
         // Fallback redirect
         return redirect()->route('projects.show', $project)
             ->with('success', 'Project created successfully!');
+    }
+
+    /**
+     * Create a chat session for a new project
+     */
+    private function createChatSessionForProject(Project $project): void
+    {
+        try {
+            // Get the AI model from project settings
+            $settings = $project->settings ?? [];
+            $aiModel = $settings['ai_model'] ?? 'cursor-cli';
+            
+            // Map AI model names to chat provider names
+            $providerMapping = [
+                'gpt-4' => 'openai',
+                'gpt-4o' => 'openai',
+                'gpt-3.5-turbo' => 'openai',
+                'claude-3-5-sonnet' => 'claude',
+                'claude-3-opus' => 'claude',
+                'claude-3-sonnet' => 'claude',
+                'claude-3-haiku' => 'claude',
+                'Claude Code' => 'claude',
+                'gemini-2.0-flash' => 'gemini',
+                'gemini-1.5-pro' => 'gemini',
+                'gemini-1.5-flash' => 'gemini',
+                'cursor-cli' => 'cursor-cli',
+            ];
+            
+            $provider = $providerMapping[$aiModel] ?? 'cursor-cli';
+            
+            Log::info('Mapping AI model to chat provider', [
+                'ai_model' => $aiModel,
+                'provider' => $provider,
+            ]);
+            
+            // Create chat session with the same provider as the project's AI model
+            $result = $this->chatService->createSession($project, $provider);
+            
+            if ($result['success']) {
+                Log::info('Chat session created for new project', [
+                    'project_id' => $project->id,
+                    'chat_id' => $result['chat_id'],
+                    'provider' => $result['provider'],
+                    'ai_model' => $aiModel,
+                ]);
+            } else {
+                Log::error('Failed to create chat session for project', [
+                    'project_id' => $project->id,
+                    'error' => $result['error'],
+                    'ai_model' => $aiModel,
+                    'provider' => $provider,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to create chat session for project', [
+                'project_id' => $project->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

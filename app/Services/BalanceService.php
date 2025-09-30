@@ -100,6 +100,68 @@ class BalanceService
     }
 
     /**
+     * Calculate the cost for chat interactions based on provider and tokens
+     */
+    public function calculateChatCost(string $provider, string $model, int $inputTokens, int $outputTokens): float
+    {
+        // Use the same pricing as CostCalculationService for consistency
+        $costCalculationService = app(CostCalculationService::class);
+        $costInfo = $costCalculationService->calculateCost($provider, $model, $inputTokens, $outputTokens);
+        
+        return $costInfo['cost'];
+    }
+
+    /**
+     * Check if user has sufficient balance for chat interaction
+     */
+    public function canAffordChat(User $user, string $provider, string $model, int $inputTokens, int $outputTokens): bool
+    {
+        $cost = $this->calculateChatCost($provider, $model, $inputTokens, $outputTokens);
+        return $user->hasSufficientBalance($cost);
+    }
+
+    /**
+     * Deduct cost from user's balance for chat interaction
+     */
+    public function deductChatCost(User $user, string $provider, string $model, int $inputTokens, int $outputTokens): bool
+    {
+        $cost = $this->calculateChatCost($provider, $model, $inputTokens, $outputTokens);
+
+        if (! $user->hasSufficientBalance($cost)) {
+            Log::warning('Insufficient balance for chat interaction', [
+                'user_id' => $user->id,
+                'required_cost' => $cost,
+                'current_balance' => $user->balance,
+                'provider' => $provider,
+                'model' => $model,
+                'input_tokens' => $inputTokens,
+                'output_tokens' => $outputTokens,
+            ]);
+
+            return false;
+        }
+
+        $success = $user->deductBalance($cost);
+
+        if ($success) {
+            // Refresh the user object to get updated balance
+            $user->refresh();
+
+            Log::info('Balance deducted for chat interaction', [
+                'user_id' => $user->id,
+                'cost' => $cost,
+                'new_balance' => $user->balance,
+                'provider' => $provider,
+                'model' => $model,
+                'input_tokens' => $inputTokens,
+                'output_tokens' => $outputTokens,
+            ]);
+        }
+
+        return $success;
+    }
+
+    /**
      * Estimate cost for different providers
      */
     public function getCostEstimates(int $tokensUsed = 1000): array

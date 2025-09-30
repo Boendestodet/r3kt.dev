@@ -92,6 +92,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/custom-domain', [App\Http\Controllers\SubdomainController::class, 'configureCustomDomain'])->name('projects.custom-domain');
     Route::delete('projects/{project}/custom-domain', [App\Http\Controllers\SubdomainController::class, 'removeCustomDomain'])->name('projects.remove-custom-domain');
     Route::get('api/cloudflare/test', [App\Http\Controllers\SubdomainController::class, 'testCloudflareConnection'])->name('cloudflare.test');
+
+    // Chat routes
+    Route::prefix('api/projects/{project}')->name('projects.')->group(function () {
+        Route::get('chat/status', [App\Http\Controllers\ChatController::class, 'getStatus'])->name('chat.status');
+        Route::get('chat/conversation', [App\Http\Controllers\ChatController::class, 'getConversation'])->name('chat.conversation');
+        Route::get('chat/conversations', [App\Http\Controllers\ChatController::class, 'getAllConversations'])->name('chat.conversations');
+        Route::post('chat/message', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.message');
+        Route::post('chat/create-session', [App\Http\Controllers\ChatController::class, 'createSession'])->name('chat.create-session');
+    });
 });
 
 require __DIR__.'/settings.php';

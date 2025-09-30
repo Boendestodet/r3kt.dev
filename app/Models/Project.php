@@ -50,6 +50,16 @@ class Project extends Model
         return $this->hasMany(Prompt::class);
     }
 
+    public function chatConversations(): HasMany
+    {
+        return $this->hasMany(ChatConversation::class);
+    }
+
+    public function getActiveChatConversation(): ?ChatConversation
+    {
+        return $this->chatConversations()->latest('last_activity')->first();
+    }
+
     public function getActiveContainer(): ?Container
     {
         return $this->containers()->where('status', 'running')->first();
@@ -79,6 +89,19 @@ class Project extends Model
                 \Log::warning("Failed to cleanup Docker resources during project deletion", [
                     'project_id' => $project->id,
                     'error' => $e->getMessage()
+                ]);
+            }
+
+            // Clean up chat conversations when project is deleted
+            try {
+                $project->chatConversations()->delete();
+                \Log::info("Cleaned up chat conversations for project", [
+                    'project_id' => $project->id,
+                ]);
+            } catch (\Exception $e) {
+                \Log::warning("Failed to cleanup chat conversations during project deletion", [
+                    'project_id' => $project->id,
+                    'error' => $e->getMessage(),
                 ]);
             }
         });
