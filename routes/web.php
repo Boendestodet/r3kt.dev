@@ -100,6 +100,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('chat/conversations', [App\Http\Controllers\ChatController::class, 'getAllConversations'])->name('chat.conversations');
         Route::post('chat/message', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.message');
         Route::post('chat/create-session', [App\Http\Controllers\ChatController::class, 'createSession'])->name('chat.create-session');
+        Route::get('files', [App\Http\Controllers\ProjectController::class, 'getFiles'])->name('files');
     });
 });
 

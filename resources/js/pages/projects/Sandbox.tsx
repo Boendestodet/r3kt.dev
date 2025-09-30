@@ -252,11 +252,8 @@ export default function SandboxPage({ project, flash }: Props) {
     return rootFiles
   }
 
-  // Get real project files or fallback to mock
-  const projectFiles = parseGeneratedCode(project.generated_code)
-  const fileStructure: FileNode[] = projectFiles.length > 0 
-    ? convertToFileStructure(projectFiles)
-    : [
+  // Mock data fallback (only used if API fails)
+  const fileStructure: FileNode[] = [
         {
           name: 'src',
           type: 'folder',
@@ -355,15 +352,50 @@ export default function SandboxPage({ project, flash }: Props) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const [isAiTyping, setIsAiTyping] = useState(false)
-  const [fileSystem, setFileSystem] = useState<FileNode[]>(fileStructure)
+  const [fileSystem, setFileSystem] = useState<FileNode[]>([])
   const [isEnhancing, setIsEnhancing] = useState(false)
+
+  // Load project files
+  const loadProjectFiles = async () => {
+    try {
+      const response = await fetch(`/api/projects/${project.id}/files`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success && data.files) {
+        setFileSystem(data.files)
+      } else {
+        // Fallback to mock data if no real files found
+        setFileSystem(fileStructure)
+      }
+    } catch (error) {
+      console.error('Failed to load project files:', error)
+      // Fallback to mock data on error
+      setFileSystem(fileStructure)
+    }
+  }
 
   // Initialize chat as empty - chat is separate from prompts
   useEffect(() => {
     // Chat should start empty, not with prompts
     // Prompts are for technical building, chat is for conversation
     setChatMessages([])
+    
+    // Load project files
+    loadProjectFiles()
   }, [])
+
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-resize textarea function

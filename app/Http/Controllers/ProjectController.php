@@ -13,6 +13,7 @@ use App\Services\ChatService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -1467,5 +1468,97 @@ EOT;
                 $query->latest()->limit(5);
             }]),
         ]);
+    }
+
+    /**
+     * Get project files for the sandbox file explorer
+     */
+    public function getFiles(Project $project): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $projectDir = storage_path("app/projects/{$project->id}");
+            
+            if (!File::exists($projectDir)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Project files not found',
+                    'files' => []
+                ]);
+            }
+
+            $files = $this->scanDirectory($projectDir);
+            
+            return response()->json([
+                'success' => true,
+                'files' => $files
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get project files', [
+                'project_id' => $project->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to load project files',
+                'files' => []
+            ]);
+        }
+    }
+
+    /**
+     * Recursively scan directory and return file structure
+     */
+    private function scanDirectory(string $path, string $relativePath = ''): array
+    {
+        $files = [];
+        $items = File::files($path); // Only get files in current directory, not recursively
+        
+        // Also get directories
+        $directories = File::directories($path);
+        
+        // Process directories first
+        foreach ($directories as $dir) {
+            $dirName = basename($dir);
+            $dirRelativePath = $relativePath ? "{$relativePath}/{$dirName}" : $dirName;
+            
+            $files[] = [
+                'name' => $dirName,
+                'type' => 'folder',
+                'path' => $dirRelativePath,
+                'children' => $this->scanDirectory($dir, $dirRelativePath)
+            ];
+        }
+        
+        // Process files
+        foreach ($items as $file) {
+            $fileName = $file->getFilename();
+            $fileRelativePath = $relativePath ? "{$relativePath}/{$fileName}" : $fileName;
+            
+            // Skip hidden files and common build/cache directories
+            if (str_starts_with($fileName, '.') || 
+                in_array($fileName, ['node_modules', '.next', 'dist', 'build', '.git'])) {
+                continue;
+            }
+            
+            try {
+                $content = File::get($file->getPathname());
+                
+                $files[] = [
+                    'name' => $fileName,
+                    'type' => 'file',
+                    'path' => $fileRelativePath,
+                    'content' => $content,
+                    'size' => $file->getSize(),
+                    'modified' => $file->getMTime()
+                ];
+            } catch (\Exception $e) {
+                // Skip files that can't be read (binary files, etc.)
+                continue;
+            }
+        }
+        
+        return $files;
     }
 }
