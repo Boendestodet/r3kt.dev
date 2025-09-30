@@ -30,6 +30,9 @@ Database (MySQL)
 - **CollaborationService**: Manages real-time collaboration and user activity tracking
 - **StackControllerFactory**: Factory pattern for managing different framework controllers
 - **BalanceService**: Manages user account balance and cost deduction for AI generation
+- **ChatService**: Unified chat system for contextual AI conversations across all providers
+- **ProjectContextService**: Gathers and formats project context for AI understanding
+- **CostCalculationService**: Calculates costs for AI interactions based on provider and tokens
 
 ### 3. Repository Pattern (via Eloquent)
 - Models act as repositories with built-in query methods
@@ -146,6 +149,25 @@ ProjectCollaborationEvent → Private Channel → Real-time Updates → User Act
 ```
 Project Type Detection → StackControllerFactory → Appropriate Controller Selection → 
 Stack-Specific Operations → Framework-Specific File Generation → Docker Configuration
+```
+
+### 17. Unified Chat System Pattern
+```
+User Message → Project Context Injection → AI Provider Selection → 
+Cost Calculation → Balance Check → AI Response → Cost Deduction → 
+Database Storage → Markdown Rendering → UI Update
+```
+
+### 18. Project Context Pattern
+```
+Project Selection → File Analysis → Prompt History → Container Status → 
+Context Formatting → AI Prompt Enhancement → Contextual Response
+```
+
+### 19. Cost Tracking Pattern
+```
+AI Interaction → Token Extraction → Provider Pricing → Cost Calculation → 
+Balance Deduction → Database Storage → Real-time UI Update
 ```
 
 ## AI Integration Patterns
@@ -312,8 +334,12 @@ Stack-Specific Operations → Framework-Specific File Generation → Docker Conf
 
 ### Backend Components
 - **User Model**: Central to authentication and project ownership
-- **Project Model**: Core entity with relationships to prompts and containers
+- **Project Model**: Core entity with relationships to prompts, containers, and chat conversations
+- **ChatConversation Model**: Stores chat history with cost tracking and token usage
 - **AIWebsiteGeneratorService**: Business logic for website generation
+- **ChatService**: Unified chat system for contextual AI conversations
+- **ProjectContextService**: Gathers project context for AI understanding
+- **CostCalculationService**: Calculates costs for AI interactions
 - **CollaborationService**: Real-time collaboration management
 - **StackControllerFactory**: Factory for framework-specific controllers
 - **BalanceService**: User account balance and cost management
@@ -322,9 +348,10 @@ Stack-Specific Operations → Framework-Specific File Generation → Docker Conf
 ### Frontend Components
 - **Layout Components**: Shared structure across pages
 - **Page Components**: Route-specific functionality (Projects/Index, Projects/Sandbox)
-- **UI Components**: Reusable elements with consistent styling (Textarea, Buttons)
+- **UI Components**: Reusable elements with consistent styling (Textarea, Buttons, CodeBlock, MessageContent, MarkdownMessage)
 - **Hooks**: Custom logic for state and side effects
 - **Sandbox Components**: Interactive development environment components
+- **Chat Components**: Professional chat interface with markdown rendering and syntax highlighting
 
 ## Data Relationships
 ```
@@ -332,6 +359,7 @@ User (1) → (Many) Projects
 Project (1) → (Many) Prompts
 Project (1) → (1) Container
 Project (1) → (Many) Comments
+Project (1) → (Many) ChatConversations
 ```
 
 ## Security Patterns
@@ -390,3 +418,15 @@ Project (1) → (Many) Comments
 - **Solution**: Implemented unique container naming with project ID and container ID combination
 - **Pattern**: `lovable-container-{project_id}-{container_id}` for unique identification
 - **Impact**: Prevents database constraint violations and ensures proper container management
+
+### 8. Unified Chat System Implementation
+- **Issue**: Need for contextual AI conversations separate from technical prompts
+- **Solution**: Implemented unified chat system with project context injection and cost tracking
+- **Pattern**: Provider-agnostic chat with automatic context gathering and markdown rendering
+- **Impact**: Professional chat experience with accurate cost tracking and balance management
+
+### 9. Markdown Rendering Enhancement
+- **Issue**: Chat messages displayed as single long lines without formatting
+- **Solution**: Added react-markdown with custom styling for professional text rendering
+- **Pattern**: Dual rendering system (code blocks with syntax highlighting, text with markdown)
+- **Impact**: Beautiful, readable chat interface with proper formatting and code display

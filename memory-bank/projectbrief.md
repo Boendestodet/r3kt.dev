@@ -39,6 +39,9 @@ Create a platform where users can:
 - ✅ **NEW**: Real-time collaboration features with WebSocket support
 - ✅ **NEW**: Enhanced AI model selection with cost comparison and provider fallback
 - ✅ **NEW**: Account balance system with automatic cost deduction for AI generation
+- ✅ **NEW**: Unified chat system with contextual AI conversations and project context
+- ✅ **NEW**: Comprehensive cost tracking for chat conversations with balance deduction
+- ✅ **NEW**: Professional markdown rendering for chat messages with syntax highlighting
 
 ## Technical Constraints
 - Must use Laravel 12 with PHP 8.3
