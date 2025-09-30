@@ -66,8 +66,8 @@ class ChatService
             $response = $this->sendToAIProvider($provider, $contextualMessage, $project);
             
             if ($response['success']) {
-                // Add AI response to database
-                $conversation->addMessage('ai', $response['response']);
+                // Prepare cost information for the message
+                $messageCostInfo = null;
                 
                 // Track costs if token information is available
                 if (isset($response['input_tokens']) && isset($response['output_tokens'])) {
@@ -124,7 +124,20 @@ class ChatService
                         $outputTokens,
                         $costInfo['currency']
                     );
+                    
+                    // Prepare cost info for the message
+                    $messageCostInfo = [
+                        'cost' => $costInfo['cost'],
+                        'currency' => $costInfo['currency'],
+                        'input_tokens' => $inputTokens,
+                        'output_tokens' => $outputTokens,
+                        'total_tokens' => $inputTokens + $outputTokens,
+                        'formatted_cost' => number_format($costInfo['cost'], 6) . ' ' . $costInfo['currency'],
+                    ];
                 }
+                
+                // Add AI response to database with cost information
+                $conversation->addMessage('ai', $response['response'], $messageCostInfo);
                 
                 return [
                     'success' => true,

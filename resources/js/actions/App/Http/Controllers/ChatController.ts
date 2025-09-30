@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ChatController::getStatus
-* @see app/Http/Controllers/ChatController.php:190
+* @see app/Http/Controllers/ChatController.php:203
 * @route '/api/projects/{project}/chat/status'
 */
 export const getStatus = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ getStatus.definition = {
 
 /**
 * @see \App\Http\Controllers\ChatController::getStatus
-* @see app/Http/Controllers/ChatController.php:190
+* @see app/Http/Controllers/ChatController.php:203
 * @route '/api/projects/{project}/chat/status'
 */
 getStatus.url = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ getStatus.url = (args: { project: number | { id: number } } | [project: number |
 
 /**
 * @see \App\Http\Controllers\ChatController::getStatus
-* @see app/Http/Controllers/ChatController.php:190
+* @see app/Http/Controllers/ChatController.php:203
 * @route '/api/projects/{project}/chat/status'
 */
 getStatus.get = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -59,7 +59,7 @@ getStatus.get = (args: { project: number | { id: number } } | [project: number |
 
 /**
 * @see \App\Http\Controllers\ChatController::getStatus
-* @see app/Http/Controllers/ChatController.php:190
+* @see app/Http/Controllers/ChatController.php:203
 * @route '/api/projects/{project}/chat/status'
 */
 getStatus.head = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -69,7 +69,7 @@ getStatus.head = (args: { project: number | { id: number } } | [project: number 
 
 /**
 * @see \App\Http\Controllers\ChatController::getStatus
-* @see app/Http/Controllers/ChatController.php:190
+* @see app/Http/Controllers/ChatController.php:203
 * @route '/api/projects/{project}/chat/status'
 */
 const getStatusForm = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ const getStatusForm = (args: { project: number | { id: number } } | [project: nu
 
 /**
 * @see \App\Http\Controllers\ChatController::getStatus
-* @see app/Http/Controllers/ChatController.php:190
+* @see app/Http/Controllers/ChatController.php:203
 * @route '/api/projects/{project}/chat/status'
 */
 getStatusForm.get = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -89,7 +89,7 @@ getStatusForm.get = (args: { project: number | { id: number } } | [project: numb
 
 /**
 * @see \App\Http\Controllers\ChatController::getStatus
-* @see app/Http/Controllers/ChatController.php:190
+* @see app/Http/Controllers/ChatController.php:203
 * @route '/api/projects/{project}/chat/status'
 */
 getStatusForm.head = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -211,7 +211,7 @@ getConversation.form = getConversationForm
 
 /**
 * @see \App\Http\Controllers\ChatController::getAllConversations
-* @see app/Http/Controllers/ChatController.php:47
+* @see app/Http/Controllers/ChatController.php:60
 * @route '/api/projects/{project}/chat/conversations'
 */
 export const getAllConversations = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -226,7 +226,7 @@ getAllConversations.definition = {
 
 /**
 * @see \App\Http\Controllers\ChatController::getAllConversations
-* @see app/Http/Controllers/ChatController.php:47
+* @see app/Http/Controllers/ChatController.php:60
 * @route '/api/projects/{project}/chat/conversations'
 */
 getAllConversations.url = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -259,7 +259,7 @@ getAllConversations.url = (args: { project: number | { id: number } } | [project
 
 /**
 * @see \App\Http\Controllers\ChatController::getAllConversations
-* @see app/Http/Controllers/ChatController.php:47
+* @see app/Http/Controllers/ChatController.php:60
 * @route '/api/projects/{project}/chat/conversations'
 */
 getAllConversations.get = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -269,7 +269,7 @@ getAllConversations.get = (args: { project: number | { id: number } } | [project
 
 /**
 * @see \App\Http\Controllers\ChatController::getAllConversations
-* @see app/Http/Controllers/ChatController.php:47
+* @see app/Http/Controllers/ChatController.php:60
 * @route '/api/projects/{project}/chat/conversations'
 */
 getAllConversations.head = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -279,7 +279,7 @@ getAllConversations.head = (args: { project: number | { id: number } } | [projec
 
 /**
 * @see \App\Http\Controllers\ChatController::getAllConversations
-* @see app/Http/Controllers/ChatController.php:47
+* @see app/Http/Controllers/ChatController.php:60
 * @route '/api/projects/{project}/chat/conversations'
 */
 const getAllConversationsForm = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -289,7 +289,7 @@ const getAllConversationsForm = (args: { project: number | { id: number } } | [p
 
 /**
 * @see \App\Http\Controllers\ChatController::getAllConversations
-* @see app/Http/Controllers/ChatController.php:47
+* @see app/Http/Controllers/ChatController.php:60
 * @route '/api/projects/{project}/chat/conversations'
 */
 getAllConversationsForm.get = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -299,7 +299,7 @@ getAllConversationsForm.get = (args: { project: number | { id: number } } | [pro
 
 /**
 * @see \App\Http\Controllers\ChatController::getAllConversations
-* @see app/Http/Controllers/ChatController.php:47
+* @see app/Http/Controllers/ChatController.php:60
 * @route '/api/projects/{project}/chat/conversations'
 */
 getAllConversationsForm.head = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -316,7 +316,7 @@ getAllConversations.form = getAllConversationsForm
 
 /**
 * @see \App\Http\Controllers\ChatController::sendMessage
-* @see app/Http/Controllers/ChatController.php:161
+* @see app/Http/Controllers/ChatController.php:174
 * @route '/api/projects/{project}/chat/message'
 */
 export const sendMessage = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -331,7 +331,7 @@ sendMessage.definition = {
 
 /**
 * @see \App\Http\Controllers\ChatController::sendMessage
-* @see app/Http/Controllers/ChatController.php:161
+* @see app/Http/Controllers/ChatController.php:174
 * @route '/api/projects/{project}/chat/message'
 */
 sendMessage.url = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -364,7 +364,7 @@ sendMessage.url = (args: { project: number | { id: number } } | [project: number
 
 /**
 * @see \App\Http\Controllers\ChatController::sendMessage
-* @see app/Http/Controllers/ChatController.php:161
+* @see app/Http/Controllers/ChatController.php:174
 * @route '/api/projects/{project}/chat/message'
 */
 sendMessage.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -374,7 +374,7 @@ sendMessage.post = (args: { project: number | { id: number } } | [project: numbe
 
 /**
 * @see \App\Http\Controllers\ChatController::sendMessage
-* @see app/Http/Controllers/ChatController.php:161
+* @see app/Http/Controllers/ChatController.php:174
 * @route '/api/projects/{project}/chat/message'
 */
 const sendMessageForm = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -384,7 +384,7 @@ const sendMessageForm = (args: { project: number | { id: number } } | [project: 
 
 /**
 * @see \App\Http\Controllers\ChatController::sendMessage
-* @see app/Http/Controllers/ChatController.php:161
+* @see app/Http/Controllers/ChatController.php:174
 * @route '/api/projects/{project}/chat/message'
 */
 sendMessageForm.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -396,7 +396,7 @@ sendMessage.form = sendMessageForm
 
 /**
 * @see \App\Http\Controllers\ChatController::createSession
-* @see app/Http/Controllers/ChatController.php:179
+* @see app/Http/Controllers/ChatController.php:192
 * @route '/api/projects/{project}/chat/create-session'
 */
 export const createSession = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -411,7 +411,7 @@ createSession.definition = {
 
 /**
 * @see \App\Http\Controllers\ChatController::createSession
-* @see app/Http/Controllers/ChatController.php:179
+* @see app/Http/Controllers/ChatController.php:192
 * @route '/api/projects/{project}/chat/create-session'
 */
 createSession.url = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -444,7 +444,7 @@ createSession.url = (args: { project: number | { id: number } } | [project: numb
 
 /**
 * @see \App\Http\Controllers\ChatController::createSession
-* @see app/Http/Controllers/ChatController.php:179
+* @see app/Http/Controllers/ChatController.php:192
 * @route '/api/projects/{project}/chat/create-session'
 */
 createSession.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -454,7 +454,7 @@ createSession.post = (args: { project: number | { id: number } } | [project: num
 
 /**
 * @see \App\Http\Controllers\ChatController::createSession
-* @see app/Http/Controllers/ChatController.php:179
+* @see app/Http/Controllers/ChatController.php:192
 * @route '/api/projects/{project}/chat/create-session'
 */
 const createSessionForm = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -464,7 +464,7 @@ const createSessionForm = (args: { project: number | { id: number } } | [project
 
 /**
 * @see \App\Http\Controllers\ChatController::createSession
-* @see app/Http/Controllers/ChatController.php:179
+* @see app/Http/Controllers/ChatController.php:192
 * @route '/api/projects/{project}/chat/create-session'
 */
 createSessionForm.post = (args: { project: number | { id: number } } | [project: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

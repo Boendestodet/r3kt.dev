@@ -33,11 +33,24 @@ class ChatController extends Controller
             ], 404);
         }
 
+        // Get current user balance info
+        $balanceService = app(\App\Services\BalanceService::class);
+        $balanceInfo = $balanceService->getBalanceInfo($project->user);
+        
         return response()->json([
             'success' => true,
             'chat_id' => $conversation->chat_id,
             'messages' => $conversation->messages,
             'last_activity' => $conversation->last_activity?->toISOString(),
+            'cost_info' => [
+                'total_cost' => $conversation->total_cost,
+                'total_tokens' => $conversation->total_tokens,
+                'input_tokens' => $conversation->input_tokens,
+                'output_tokens' => $conversation->output_tokens,
+                'cost_currency' => $conversation->cost_currency,
+                'formatted_cost' => $conversation->getFormattedCost(),
+            ],
+            'balance_info' => $balanceInfo,
         ]);
     }
 

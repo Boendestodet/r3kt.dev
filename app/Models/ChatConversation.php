@@ -40,15 +40,22 @@ class ChatConversation extends Model
     /**
      * Add a message to the conversation
      */
-    public function addMessage(string $role, string $content): void
+    public function addMessage(string $role, string $content, array $costInfo = null): void
     {
         $messages = $this->messages ?? [];
         
-        $messages[] = [
+        $messageData = [
             'role' => $role,
             'content' => $content,
             'timestamp' => now()->toISOString(),
         ];
+        
+        // Add cost information if provided (for AI messages)
+        if ($costInfo && $role === 'ai') {
+            $messageData['cost_info'] = $costInfo;
+        }
+        
+        $messages[] = $messageData;
         
         $this->update([
             'messages' => $messages,

@@ -798,7 +798,13 @@ export default function SandboxPage({ project, flash }: Props) {
             id: Date.now().toString() + Math.random(),
             type: msg.role,
             content: msg.content,
-            timestamp: new Date(msg.timestamp)
+            timestamp: new Date(msg.timestamp),
+            // Include cost information for AI messages
+            ...(msg.role === 'ai' && msg.cost_info && {
+              cost: msg.cost_info.formatted_cost,
+              tokens: msg.cost_info.total_tokens,
+              balance_info: data.balance_info // This will be added from the response
+            })
           }))
           setChatMessages(conversationMessages)
         } else {
@@ -917,48 +923,55 @@ export default function SandboxPage({ project, flash }: Props) {
   }
 
   const extractMeaningfulContent = (content: string): string => {
-    // Extract meaningful conversation content, removing technical details
+    // For chat messages, we want to preserve the full content including markdown formatting
+    // Only clean up if it's clearly technical/JSON output that shouldn't be shown
     let meaningful = content
 
-    // Remove JSON code blocks
-    meaningful = meaningful.replace(/```json[\s\S]*?```/g, '')
-    meaningful = meaningful.replace(/```[\s\S]*?```/g, '')
+    // Only remove pure JSON responses (not markdown with code blocks)
+    if (content.trim().startsWith('{') && content.trim().endsWith('}')) {
+      try {
+        JSON.parse(content)
+        // This is pure JSON, extract meaningful content
+        meaningful = meaningful.replace(/```json[\s\S]*?```/g, '')
+        meaningful = meaningful.replace(/```[\s\S]*?```/g, '')
+        meaningful = meaningful.replace(/[^\s]*\.(tsx?|jsx?|css|json|html|vue|svelte|astro)[^\s]*/g, '')
+        meaningful = meaningful.replace(/\s+/g, ' ').trim()
+        
+        // Extract action descriptions
+        const actionPatterns = [
+          /I'll\s+([^.!?]+[.!?])/gi,
+          /Let me\s+([^.!?]+[.!?])/gi,
+          /I'm going to\s+([^.!?]+[.!?])/gi,
+          /I'll create\s+([^.!?]+[.!?])/gi,
+          /I'll add\s+([^.!?]+[.!?])/gi,
+          /I'll update\s+([^.!?]+[.!?])/gi,
+        ]
 
-    // Remove file paths and technical details
-    meaningful = meaningful.replace(/[^\s]*\.(tsx?|jsx?|css|json|html|vue|svelte|astro)[^\s]*/g, '')
-    
-    // Remove excessive whitespace
-    meaningful = meaningful.replace(/\s+/g, ' ').trim()
+        let extractedActions = ''
+        for (const pattern of actionPatterns) {
+          const matches = meaningful.match(pattern)
+          if (matches) {
+            extractedActions += matches.join(' ') + ' '
+          }
+        }
 
-    // Extract action descriptions
-    const actionPatterns = [
-      /I'll\s+([^.!?]+[.!?])/gi,
-      /Let me\s+([^.!?]+[.!?])/gi,
-      /I'm going to\s+([^.!?]+[.!?])/gi,
-      /I'll create\s+([^.!?]+[.!?])/gi,
-      /I'll add\s+([^.!?]+[.!?])/gi,
-      /I'll update\s+([^.!?]+[.!?])/gi,
-    ]
+        if (extractedActions.trim()) {
+          return extractedActions.trim()
+        }
 
-    let extractedActions = ''
-    for (const pattern of actionPatterns) {
-      const matches = meaningful.match(pattern)
-      if (matches) {
-        extractedActions += matches.join(' ') + ' '
+        if (meaningful.length < 10) {
+          return 'I\'ve processed your request and made the necessary changes to your project.'
+        }
+        
+        return meaningful
+      } catch {
+        // Not valid JSON, return as-is to preserve markdown
+        return content
       }
     }
-
-    // If we found specific actions, use those; otherwise use the cleaned content
-    if (extractedActions.trim()) {
-      return extractedActions.trim()
-    }
-
-    // If content is too technical, provide a summary
-    if (meaningful.length > 200 && meaningful.includes('{') && meaningful.includes('}')) {
-      return 'I\'ve processed your request and made the necessary changes to your project.'
-    }
-
-    return meaningful || 'I\'ve completed the requested changes.'
+    
+    // For regular chat content, return as-is to preserve markdown formatting
+    return content
   }
 
   const createAIChatSession = async () => {
