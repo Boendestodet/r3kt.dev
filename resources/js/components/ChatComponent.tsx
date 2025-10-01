@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { router } from '@inertiajs/react'
 import { Send, Bot, User, Loader2 } from 'lucide-react'
+import ChatMessageSkeleton from './ChatMessageSkeleton'
 
 interface ChatMessage {
   id: string
@@ -19,6 +20,7 @@ export default function ChatComponent({ projectId, chatId }: ChatProps) {
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasChat, setHasChat] = useState(!!chatId)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -36,7 +38,10 @@ export default function ChatComponent({ projectId, chatId }: ChatProps) {
   }, [chatId])
 
   const loadConversation = async () => {
-    if (!chatId) return
+    if (!chatId) {
+      setIsInitialLoading(false)
+      return
+    }
 
     try {
       const response = await fetch(`/api/projects/${projectId}/chat/conversation`)
@@ -50,6 +55,8 @@ export default function ChatComponent({ projectId, chatId }: ChatProps) {
       }
     } catch (error) {
       console.error('Failed to load conversation:', error)
+    } finally {
+      setIsInitialLoading(false)
     }
   }
 
@@ -227,7 +234,13 @@ export default function ChatComponent({ projectId, chatId }: ChatProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+        {isInitialLoading ? (
+          // Loading skeletons
+          Array.from({ length: 3 }).map((_, index) => (
+            <ChatMessageSkeleton key={index} />
+          ))
+        ) : (
+          messages.map((message) => (
           <div
             key={message.id}
             className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -257,7 +270,8 @@ export default function ChatComponent({ projectId, chatId }: ChatProps) {
               </div>
             )}
           </div>
-        ))}
+        ))
+        )}
         
         {isLoading && (
           <div className="flex gap-3 justify-start">

@@ -35,9 +35,19 @@ class ProjectController extends Controller
     public function index(): Response
     {
         $user = auth()->user();
+        
+        // Optimize query by selecting only needed columns and using efficient eager loading
         $projects = $user->projects()
-            ->with(['containers', 'prompts'])
-            ->latest()
+            ->select('id', 'name', 'description', 'status', 'created_at', 'updated_at', 'user_id')
+            ->with([
+                'containers' => function ($query) {
+                    $query->select('id', 'project_id', 'status', 'created_at');
+                },
+                'prompts' => function ($query) {
+                    $query->select('id', 'project_id', 'created_at');
+                }
+            ])
+            ->latest('created_at')
             ->paginate(12);
 
         $balanceInfo = $this->balanceService->getBalanceInfo($user);

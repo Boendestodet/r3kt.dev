@@ -1,6 +1,7 @@
 import type React from "react"
 import { Box, ChevronLeft, ChevronRight, ChevronDown, X, Menu, Plus, Search } from "../icons"
 import { Button } from "../ui"
+import { Skeleton } from "../ui/skeleton"
 
 interface Project {
   id: number
@@ -33,6 +34,7 @@ interface SidebarProps {
     formatted_total_spent: string
     can_generate: boolean
   }
+  isLoading?: boolean
   onToggleCollapse: () => void
   onToggleHidden: () => void
   onSearchChange: (query: string) => void
@@ -48,6 +50,7 @@ export const Sidebar = ({
   showCreditsDropdown,
   projects,
   balanceInfo,
+  isLoading = false,
   onToggleCollapse,
   onToggleHidden,
   onSearchChange,
@@ -243,7 +246,21 @@ export const Sidebar = ({
               </div>
             </div>
             <div className="space-y-3">
-              {filteredProjects.length > 0 ? (
+              {isLoading ? (
+                // Loading skeletons
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="group flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-slate-800/40 to-slate-900/40 border border-slate-700/40 backdrop-blur-sm">
+                    <div className="relative">
+                      <Skeleton className="w-10 h-10 rounded-xl bg-slate-700" />
+                      <Skeleton className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-slate-600" />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <Skeleton className="h-4 w-24 bg-slate-700" />
+                      <Skeleton className="h-3 w-16 bg-slate-700" />
+                    </div>
+                  </div>
+                ))
+              ) : filteredProjects.length > 0 ? (
                 filteredProjects.map((project) => {
                   const status = getProjectStatus(project)
                   const statusColor = getStatusColor(status)

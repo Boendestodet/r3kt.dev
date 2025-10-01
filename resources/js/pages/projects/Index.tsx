@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { router, useForm } from "@inertiajs/react"
+import { useAppKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts"
 import { 
   Box, 
   Sidebar, 
@@ -12,6 +13,7 @@ import {
   DeploymentModal, 
   SandboxModal 
 } from "../../components"
+import ProjectCardSkeleton from "../../components/ProjectCardSkeleton"
 
 interface Project {
   id: number
@@ -64,8 +66,25 @@ export default function R3ktSandboxPage({ projects, balanceInfo: initialBalanceI
   const [sidebarHidden, setSidebarHidden] = useState(false)
   const [showDeploymentModal, setShowDeploymentModal] = useState(false)
   
+  // Enable keyboard shortcuts
+  useAppKeyboardShortcuts()
+  
   // Balance info state
   const [balanceInfo, setBalanceInfo] = useState<BalanceInfo>(initialBalanceInfo)
+  
+  // Add event listeners for keyboard shortcuts
+  useEffect(() => {
+    const handleOpenNewProjectModal = () => setShowNewProjectModal(true)
+    const handleOpenNewSandboxModal = () => setShowNewSandboxModal(true)
+    
+    window.addEventListener('openNewProjectModal', handleOpenNewProjectModal)
+    window.addEventListener('openNewSandboxModal', handleOpenNewSandboxModal)
+    
+    return () => {
+      window.removeEventListener('openNewProjectModal', handleOpenNewProjectModal)
+      window.removeEventListener('openNewSandboxModal', handleOpenNewSandboxModal)
+    }
+  }, [])
   
   // New project creation states
   const [projectName, setProjectName] = useState("")
@@ -927,6 +946,7 @@ export default function R3ktSandboxPage({ projects, balanceInfo: initialBalanceI
           showCreditsDropdown={showCreditsDropdown}
           projects={projects.data}
           balanceInfo={balanceInfo}
+          isLoading={isCreatingProject}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           onToggleHidden={() => setSidebarHidden(!sidebarHidden)}
           onSearchChange={setSearchQuery}

@@ -20,6 +20,29 @@ export default defineConfig({
     esbuild: {
         jsx: 'automatic',
     },
+    build: {
+        // Optimize bundle size
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    // Split vendor libraries into separate chunks
+                    vendor: ['react', 'react-dom'],
+                    ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+                    icons: ['lucide-react'],
+                },
+            },
+        },
+        // Enable minification
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                drop_console: true, // Remove console.log in production
+                drop_debugger: true,
+            },
+        },
+        // Optimize chunk size
+        chunkSizeWarningLimit: 1000,
+    },
     server: {
         host: '0.0.0.0',
         origin: 'https://r3kt.dev',
