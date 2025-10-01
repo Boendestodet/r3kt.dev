@@ -62,6 +62,14 @@
 - **Enhanced Prompt System**: Full text visibility with intelligent height detection
 - **Real-time Collaboration**: WebSocket-based collaboration features
 
+### Security Technologies
+- **Input Sanitization**: HTML sanitization, text sanitization, file name validation, URL validation
+- **Rate Limiting**: Global rate limiting middleware for API routes and user actions
+- **Security Headers**: XSS protection, CSRF protection, content security policy
+- **Accessibility Service**: Mobile-first responsive utilities and accessibility features
+- **Form Validation**: Enhanced form components with validation and accessibility
+- **Security Testing**: Comprehensive security tests for input sanitization and rate limiting
+
 ## Development Environment
 
 ### Local Development

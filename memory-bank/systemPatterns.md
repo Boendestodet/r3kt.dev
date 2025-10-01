@@ -170,6 +170,30 @@ AI Interaction → Token Extraction → Provider Pricing → Cost Calculation �
 Balance Deduction → Database Storage → Real-time UI Update
 ```
 
+### 20. Security Enhancement Pattern
+```
+User Input → Input Sanitization Service → Validation → Sanitized Data → 
+Database Storage → Rate Limiting Check → Security Headers → Response
+```
+
+### 21. Input Sanitization Pattern
+```
+Raw Input → HTML Sanitization → Text Sanitization → File Name Validation → 
+URL Validation → Array Recursive Sanitization → Clean Output
+```
+
+### 22. Rate Limiting Pattern
+```
+API Request → Rate Limiting Middleware → User-specific Limits → 
+Request Counting → Limit Check → Allow/Deny → Response
+```
+
+### 23. Security Headers Pattern
+```
+HTTP Response → Security Headers Middleware → XSS Protection → 
+CSRF Protection → Content Security Policy → Secure Headers → Client
+```
+
 ## AI Integration Patterns
 
 ### 1. Multi-Provider Architecture
@@ -343,12 +367,20 @@ Balance Deduction → Database Storage → Real-time UI Update
 - **CollaborationService**: Real-time collaboration management
 - **StackControllerFactory**: Factory for framework-specific controllers
 - **BalanceService**: User account balance and cost management
+- **InputSanitizationService**: Comprehensive input sanitization and validation
+- **AccessibilityService**: Accessibility features and mobile-first responsive utilities
+- **RateLimitMiddleware**: Rate limiting for API routes and user actions
+- **SecurityHeadersMiddleware**: Enhanced security headers for XSS and CSRF protection
 - **Policies**: Authorization logic for user permissions
 
 ### Frontend Components
 - **Layout Components**: Shared structure across pages
 - **Page Components**: Route-specific functionality (Projects/Index, Projects/Sandbox)
 - **UI Components**: Reusable elements with consistent styling (Textarea, Buttons, CodeBlock, MessageContent, MarkdownMessage)
+- **Form Components**: Enhanced form components with validation and accessibility
+- **Loading Components**: Loading states and progress indicators
+- **Responsive Components**: Mobile-first responsive utilities and components
+- **Toast Components**: Notification and feedback components
 - **Hooks**: Custom logic for state and side effects
 - **Sandbox Components**: Interactive development environment components
 - **Chat Components**: Professional chat interface with markdown rendering and syntax highlighting
