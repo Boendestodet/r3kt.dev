@@ -145,40 +145,206 @@
     .will-change-transform {
         will-change: transform;
     }
-    
+
     .will-change-scroll {
         will-change: scroll-position;
     }
-    
+
     .will-change-contents {
         will-change: contents;
     }
-    
+
     .gpu-accelerated {
         transform: translateZ(0);
         backface-visibility: hidden;
         perspective: 1000px;
     }
-    
+
     .smooth-scroll {
         scroll-behavior: smooth;
         -webkit-overflow-scrolling: touch;
     }
-    
+
     /* Optimize animations */
     .animate-optimized {
         animation-fill-mode: both;
         animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
-    /* Reduce motion for accessibility */
+
+    /* Accessibility improvements */
+    .focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+    }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* Touch-friendly interactions */
+    .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        .border-slate-300 {
+            border-color: #000000;
+        }
+        
+        .text-slate-600 {
+            color: #000000;
+        }
+        
+        .bg-slate-100 {
+            background-color: #ffffff;
+        }
+    }
+
+    /* Reduced motion for accessibility */
     @media (prefers-reduced-motion: reduce) {
         .animate-optimized {
             animation: none !important;
         }
-        
+
         .smooth-scroll {
             scroll-behavior: auto;
         }
+        
+        .transition-all {
+            transition: none !important;
+        }
+        
+        .animate-spin {
+            animation: none !important;
+        }
+        
+        .animate-pulse {
+            animation: none !important;
+        }
+    }
+
+    /* Dark mode improvements */
+    @media (prefers-color-scheme: dark) {
+        .dark\:bg-slate-900 {
+            background-color: #0f172a;
+        }
+        
+        .dark\:text-white {
+            color: #ffffff;
+        }
+        
+        .dark\:border-slate-700 {
+            border-color: #334155;
+        }
+    }
+
+    /* Mobile-first responsive utilities */
+    .mobile-container {
+        @apply px-4 mx-auto;
+        max-width: 100%;
+    }
+
+    @screen sm {
+        .mobile-container {
+            max-width: 640px;
+        }
+    }
+
+    @screen md {
+        .mobile-container {
+            max-width: 768px;
+        }
+    }
+
+    @screen lg {
+        .mobile-container {
+            max-width: 1024px;
+        }
+    }
+
+    @screen xl {
+        .mobile-container {
+            max-width: 1280px;
+        }
+    }
+
+    /* Loading states */
+    .loading-shimmer {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+        0% {
+            background-position: -200% 0;
+        }
+        100% {
+            background-position: 200% 0;
+        }
+    }
+
+    /* Toast animations */
+    .toast-enter {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    .toast-enter-active {
+        transform: translateX(0);
+        opacity: 1;
+        transition: transform 300ms ease-out, opacity 300ms ease-out;
+    }
+
+    .toast-exit {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    .toast-exit-active {
+        transform: translateX(100%);
+        opacity: 0;
+        transition: transform 300ms ease-in, opacity 300ms ease-in;
+    }
+
+    /* Form focus states */
+    .form-input:focus {
+        @apply ring-2 ring-blue-500 border-transparent;
+    }
+
+    .form-input:invalid {
+        @apply border-red-500;
+    }
+
+    .form-input:valid {
+        @apply border-green-500;
+    }
+
+    /* Button states */
+    .btn-primary {
+        @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .btn-secondary {
+        @apply bg-slate-200 text-slate-900 hover:bg-slate-300 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2;
+    }
+
+    .btn-danger {
+        @apply bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+    }
+
+    /* Disabled states */
+    .btn-disabled {
+        @apply opacity-50 cursor-not-allowed pointer-events-none;
     }
 }

@@ -17,65 +17,105 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route('projects.index');
     })->name('dashboard');
 
-    // Project routes (Core CRUD)
-    Route::resource('projects', App\Http\Controllers\ProjectController::class);
-    Route::post('projects/{project}/duplicate', [App\Http\Controllers\ProjectController::class, 'duplicate'])->name('projects.duplicate');
-    Route::get('api/projects/check-name', [App\Http\Controllers\ProjectController::class, 'checkName'])->name('projects.check-name');
-    Route::get('api/projects/{project}', [App\Http\Controllers\ProjectController::class, 'showApi'])->name('projects.show-api');
+    // Project routes (Core CRUD) - with rate limiting
+    Route::resource('projects', App\Http\Controllers\ProjectController::class)
+        ->middleware('rate.limit:projects,30,1'); // 30 requests per minute
+    Route::post('projects/{project}/duplicate', [App\Http\Controllers\ProjectController::class, 'duplicate'])
+        ->name('projects.duplicate')
+        ->middleware('rate.limit:duplicate,5,1'); // 5 duplicates per minute
+    Route::get('api/projects/check-name', [App\Http\Controllers\ProjectController::class, 'checkName'])
+        ->name('projects.check-name')
+        ->middleware('rate.limit:check-name,20,1'); // 20 checks per minute
+    Route::get('api/projects/{project}', [App\Http\Controllers\ProjectController::class, 'showApi'])
+        ->name('projects.show-api');
 
     // Project Sandbox routes
-    Route::get('projects/{project}/sandbox', [App\Http\Controllers\ProjectSandboxController::class, 'show'])->name('projects.sandbox');
+    Route::get('projects/{project}/sandbox', [App\Http\Controllers\ProjectSandboxController::class, 'show'])
+        ->name('projects.sandbox');
 
     // Project Verification routes
-    Route::get('api/projects/{project}/verify-setup', [App\Http\Controllers\ProjectVerificationController::class, 'verify'])->name('projects.verify-setup');
+    Route::get('api/projects/{project}/verify-setup', [App\Http\Controllers\ProjectVerificationController::class, 'verify'])
+        ->name('projects.verify-setup');
 
-    // Prompt routes
-    Route::post('projects/{project}/prompts', [App\Http\Controllers\PromptController::class, 'store'])->name('prompts.store');
-    Route::get('prompts/{prompt}', [App\Http\Controllers\PromptController::class, 'show'])->name('prompts.show');
-    Route::get('prompts/{prompt}/status', [App\Http\Controllers\PromptController::class, 'status'])->name('prompts.status');
-    Route::delete('prompts/{prompt}', [App\Http\Controllers\PromptController::class, 'destroy'])->name('prompts.destroy');
+    // Prompt routes - with strict rate limiting for AI generation
+    Route::post('projects/{project}/prompts', [App\Http\Controllers\PromptController::class, 'store'])
+        ->name('prompts.store')
+        ->middleware('rate.limit:prompts,10,1'); // 10 prompts per minute
+    Route::get('prompts/{prompt}', [App\Http\Controllers\PromptController::class, 'show'])
+        ->name('prompts.show');
+    Route::get('prompts/{prompt}/status', [App\Http\Controllers\PromptController::class, 'status'])
+        ->name('prompts.status');
+    Route::delete('prompts/{prompt}', [App\Http\Controllers\PromptController::class, 'destroy'])
+        ->name('prompts.destroy');
 
     // Container management routes (legacy - for backward compatibility)
-    Route::post('projects/{project}/containers', [App\Http\Controllers\ContainerController::class, 'store'])->name('containers.store');
-    Route::get('containers/{container}', [App\Http\Controllers\ContainerController::class, 'show'])->name('containers.show');
-    Route::delete('containers/{container}', [App\Http\Controllers\ContainerController::class, 'destroy'])->name('containers.destroy');
+    Route::post('projects/{project}/containers', [App\Http\Controllers\ContainerController::class, 'store'])
+        ->name('containers.store')
+        ->middleware('rate.limit:containers,20,1'); // 20 container operations per minute
+    Route::get('containers/{container}', [App\Http\Controllers\ContainerController::class, 'show'])
+        ->name('containers.show');
+    Route::delete('containers/{container}', [App\Http\Controllers\ContainerController::class, 'destroy'])
+        ->name('containers.destroy');
 
     // Authenticated routes
-    Route::post('projects/{project}/toggle-public', [App\Http\Controllers\GalleryController::class, 'togglePublic'])->name('projects.toggle-public');
+    Route::post('projects/{project}/toggle-public', [App\Http\Controllers\GalleryController::class, 'togglePublic'])
+        ->name('projects.toggle-public');
 
-    // Comment routes
-    Route::get('projects/{project}/comments', [App\Http\Controllers\CommentController::class, 'index'])->name('comments.index');
-    Route::post('projects/{project}/comments', [App\Http\Controllers\CommentController::class, 'store'])->name('comments.store');
-    Route::put('comments/{comment}', [App\Http\Controllers\CommentController::class, 'update'])->name('comments.update');
-    Route::delete('comments/{comment}', [App\Http\Controllers\CommentController::class, 'destroy'])->name('comments.destroy');
+    // Comment routes - with rate limiting
+    Route::get('projects/{project}/comments', [App\Http\Controllers\CommentController::class, 'index'])
+        ->name('comments.index');
+    Route::post('projects/{project}/comments', [App\Http\Controllers\CommentController::class, 'store'])
+        ->name('comments.store')
+        ->middleware('rate.limit:comments,15,1'); // 15 comments per minute
+    Route::put('comments/{comment}', [App\Http\Controllers\CommentController::class, 'update'])
+        ->name('comments.update');
+    Route::delete('comments/{comment}', [App\Http\Controllers\CommentController::class, 'destroy'])
+        ->name('comments.destroy');
 
     // Balance routes
-    Route::get('api/balance', [App\Http\Controllers\BalanceController::class, 'index'])->name('balance.index');
-    Route::get('api/balance/cost-estimates', [App\Http\Controllers\BalanceController::class, 'costEstimates'])->name('balance.cost-estimates');
-    Route::get('api/balance/can-afford', [App\Http\Controllers\BalanceController::class, 'canAfford'])->name('balance.can-afford');
-    Route::post('api/balance/add-credits', [App\Http\Controllers\BalanceController::class, 'addCredits'])->name('balance.add-credits');
-    Route::post('comments/{comment}/toggle-resolved', [App\Http\Controllers\CommentController::class, 'toggleResolved'])->name('comments.toggle-resolved');
+    Route::get('api/balance', [App\Http\Controllers\BalanceController::class, 'index'])
+        ->name('balance.index');
+    Route::get('api/balance/cost-estimates', [App\Http\Controllers\BalanceController::class, 'costEstimates'])
+        ->name('balance.cost-estimates');
+    Route::get('api/balance/can-afford', [App\Http\Controllers\BalanceController::class, 'canAfford'])
+        ->name('balance.can-afford');
+    Route::post('api/balance/add-credits', [App\Http\Controllers\BalanceController::class, 'addCredits'])
+        ->name('balance.add-credits')
+        ->middleware('rate.limit:add-credits,5,1'); // 5 credit additions per minute
+    Route::post('comments/{comment}/toggle-resolved', [App\Http\Controllers\CommentController::class, 'toggleResolved'])
+        ->name('comments.toggle-resolved');
 
     // Docker System Management routes
     Route::prefix('api/docker')->name('docker.')->group(function () {
         Route::get('info', [App\Http\Controllers\DockerSystemController::class, 'info'])->name('info');
         Route::get('containers', [App\Http\Controllers\DockerSystemController::class, 'getRunningContainers'])->name('containers');
-        Route::post('cleanup', [App\Http\Controllers\DockerSystemController::class, 'cleanup'])->name('cleanup');
+        Route::post('cleanup', [App\Http\Controllers\DockerSystemController::class, 'cleanup'])
+            ->name('cleanup')
+            ->middleware('rate.limit:docker-cleanup,3,1'); // 3 cleanups per minute
     });
 
     // Project Deployment routes
     Route::prefix('api/projects/{project}')->name('projects.')->group(function () {
-        Route::post('deploy', [App\Http\Controllers\ProjectDeploymentController::class, 'deploy'])->name('deploy');
-        Route::get('docker/preview', [App\Http\Controllers\ProjectDeploymentController::class, 'getPreviewUrl'])->name('docker.preview');
+        Route::post('deploy', [App\Http\Controllers\ProjectDeploymentController::class, 'deploy'])
+            ->name('deploy')
+            ->middleware('rate.limit:deploy,5,1'); // 5 deployments per minute
+        Route::get('docker/preview', [App\Http\Controllers\ProjectDeploymentController::class, 'getPreviewUrl'])
+            ->name('docker.preview');
     });
 
     // Container Management routes
     Route::prefix('api/projects/{project}')->name('projects.')->group(function () {
-        Route::post('docker/start', [App\Http\Controllers\ContainerController::class, 'start'])->name('docker.start');
-        Route::get('docker/status', [App\Http\Controllers\ContainerController::class, 'status'])->name('docker.status');
-        Route::get('docker/logs', [App\Http\Controllers\ContainerController::class, 'logs'])->name('docker.logs');
-        Route::post('docker/stop', [App\Http\Controllers\ContainerController::class, 'stop'])->name('docker.stop');
-        Route::post('docker/restart', [App\Http\Controllers\ContainerController::class, 'restart'])->name('docker.restart');
+        Route::post('docker/start', [App\Http\Controllers\ContainerController::class, 'start'])
+            ->name('docker.start')
+            ->middleware('rate.limit:docker-start,10,1'); // 10 starts per minute
+        Route::get('docker/status', [App\Http\Controllers\ContainerController::class, 'status'])
+            ->name('docker.status');
+        Route::get('docker/logs', [App\Http\Controllers\ContainerController::class, 'logs'])
+            ->name('docker.logs');
+        Route::post('docker/stop', [App\Http\Controllers\ContainerController::class, 'stop'])
+            ->name('docker.stop');
+        Route::post('docker/restart', [App\Http\Controllers\ContainerController::class, 'restart'])
+            ->name('docker.restart');
     });
 
     // Direct Container Management routes (for direct container access - when you have container ID)
@@ -87,19 +127,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Subdomain management routes
-    Route::get('api/subdomain/check', [App\Http\Controllers\SubdomainController::class, 'checkAvailability'])->name('subdomain.check');
-    Route::post('projects/{project}/subdomain', [App\Http\Controllers\SubdomainController::class, 'updateSubdomain'])->name('projects.subdomain');
-    Route::post('projects/{project}/custom-domain', [App\Http\Controllers\SubdomainController::class, 'configureCustomDomain'])->name('projects.custom-domain');
-    Route::delete('projects/{project}/custom-domain', [App\Http\Controllers\SubdomainController::class, 'removeCustomDomain'])->name('projects.remove-custom-domain');
-    Route::get('api/cloudflare/test', [App\Http\Controllers\SubdomainController::class, 'testCloudflareConnection'])->name('cloudflare.test');
+    Route::get('api/subdomain/check', [App\Http\Controllers\SubdomainController::class, 'checkAvailability'])
+        ->name('subdomain.check')
+        ->middleware('rate.limit:subdomain-check,20,1'); // 20 checks per minute
+    Route::post('projects/{project}/subdomain', [App\Http\Controllers\SubdomainController::class, 'updateSubdomain'])
+        ->name('projects.subdomain')
+        ->middleware('rate.limit:subdomain-update,5,1'); // 5 updates per minute
+    Route::post('projects/{project}/custom-domain', [App\Http\Controllers\SubdomainController::class, 'configureCustomDomain'])
+        ->name('projects.custom-domain')
+        ->middleware('rate.limit:custom-domain,3,1'); // 3 custom domain configs per minute
+    Route::delete('projects/{project}/custom-domain', [App\Http\Controllers\SubdomainController::class, 'removeCustomDomain'])
+        ->name('projects.remove-custom-domain');
+    Route::get('api/cloudflare/test', [App\Http\Controllers\SubdomainController::class, 'testCloudflareConnection'])
+        ->name('cloudflare.test');
 
-    // Chat routes
+    // Chat routes - with rate limiting for AI interactions
     Route::prefix('api/projects/{project}')->name('projects.')->group(function () {
         Route::get('chat/status', [App\Http\Controllers\ChatController::class, 'getStatus'])->name('chat.status');
         Route::get('chat/conversation', [App\Http\Controllers\ChatController::class, 'getConversation'])->name('chat.conversation');
         Route::get('chat/conversations', [App\Http\Controllers\ChatController::class, 'getAllConversations'])->name('chat.conversations');
-        Route::post('chat/message', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.message');
-        Route::post('chat/create-session', [App\Http\Controllers\ChatController::class, 'createSession'])->name('chat.create-session');
+        Route::post('chat/message', [App\Http\Controllers\ChatController::class, 'sendMessage'])
+            ->name('chat.message')
+            ->middleware('rate.limit:chat-message,30,1'); // 30 chat messages per minute
+        Route::post('chat/create-session', [App\Http\Controllers\ChatController::class, 'createSession'])
+            ->name('chat.create-session')
+            ->middleware('rate.limit:chat-session,10,1'); // 10 new sessions per minute
         Route::get('files', [App\Http\Controllers\ProjectController::class, 'getFiles'])->name('files');
     });
 });

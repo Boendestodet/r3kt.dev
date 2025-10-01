@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\InputSanitizationService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProjectRequest extends FormRequest
@@ -12,6 +13,19 @@ class StoreProjectRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $sanitizer = app(InputSanitizationService::class);
+        
+        $this->merge([
+            'name' => $sanitizer->sanitizeProjectName($this->input('name', '')),
+            'description' => $sanitizer->sanitizeText($this->input('description', ''), 1000),
+        ]);
     }
 
     /**
