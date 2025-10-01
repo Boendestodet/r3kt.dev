@@ -218,9 +218,9 @@ cleanupForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =>
 cleanup.form = cleanupForm
 
 const docker = {
-    info,
-    containers,
-    cleanup,
+    info: Object.assign(info, info),
+    containers: Object.assign(containers, containers),
+    cleanup: Object.assign(cleanup, cleanup),
 }
 
 export default docker

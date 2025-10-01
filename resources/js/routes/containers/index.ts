@@ -627,13 +627,13 @@ logsForm.head = (args: { container: number | { id: number } } | [container: numb
 logs.form = logsForm
 
 const containers = {
-    store,
-    show,
-    destroy,
-    stop,
-    restart,
-    status,
-    logs,
+    store: Object.assign(store, store),
+    show: Object.assign(show, show),
+    destroy: Object.assign(destroy, destroy),
+    stop: Object.assign(stop, stop),
+    restart: Object.assign(restart, restart),
+    status: Object.assign(status, status),
+    logs: Object.assign(logs, logs),
 }
 
 export default containers

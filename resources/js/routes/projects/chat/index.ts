@@ -475,11 +475,11 @@ createSessionForm.post = (args: { project: number | { id: number } } | [project:
 createSession.form = createSessionForm
 
 const chat = {
-    status,
-    conversation,
-    conversations,
-    message,
-    createSession,
+    status: Object.assign(status, status),
+    conversation: Object.assign(conversation, conversation),
+    conversations: Object.assign(conversations, conversations),
+    message: Object.assign(message, message),
+    createSession: Object.assign(createSession, createSession),
 }
 
 export default chat

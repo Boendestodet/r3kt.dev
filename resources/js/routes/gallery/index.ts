@@ -267,9 +267,9 @@ statsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 stats.form = statsForm
 
 const gallery = {
-    index,
-    show,
-    stats,
+    index: Object.assign(index, index),
+    show: Object.assign(show, show),
+    stats: Object.assign(stats, stats),
 }
 
 export default gallery

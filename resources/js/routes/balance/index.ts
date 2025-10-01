@@ -299,10 +299,10 @@ addCreditsForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'>
 addCredits.form = addCreditsForm
 
 const balance = {
-    index,
-    costEstimates,
-    canAfford,
-    addCredits,
+    index: Object.assign(index, index),
+    costEstimates: Object.assign(costEstimates, costEstimates),
+    canAfford: Object.assign(canAfford, canAfford),
+    addCredits: Object.assign(addCredits, addCredits),
 }
 
 export default balance

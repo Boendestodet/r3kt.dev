@@ -81,7 +81,7 @@ checkForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 check.form = checkForm
 
 const subdomain = {
-    check,
+    check: Object.assign(check, check),
 }
 
 export default subdomain

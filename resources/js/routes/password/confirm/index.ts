@@ -56,7 +56,7 @@ storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => (
 store.form = storeForm
 
 const confirm = {
-    store,
+    store: Object.assign(store, store),
 }
 
 export default confirm

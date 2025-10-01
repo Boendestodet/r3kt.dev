@@ -14,20 +14,20 @@ import Settings from './Settings'
 import Auth from './Auth'
 
 const Controllers = {
-    GalleryController,
-    ProjectController,
-    ProjectSandboxController,
-    ProjectVerificationController,
-    PromptController,
-    ContainerController,
-    CommentController,
-    BalanceController,
-    DockerSystemController,
-    ProjectDeploymentController,
-    SubdomainController,
-    ChatController,
-    Settings,
-    Auth,
+    GalleryController: Object.assign(GalleryController, GalleryController),
+    ProjectController: Object.assign(ProjectController, ProjectController),
+    ProjectSandboxController: Object.assign(ProjectSandboxController, ProjectSandboxController),
+    ProjectVerificationController: Object.assign(ProjectVerificationController, ProjectVerificationController),
+    PromptController: Object.assign(PromptController, PromptController),
+    ContainerController: Object.assign(ContainerController, ContainerController),
+    CommentController: Object.assign(CommentController, CommentController),
+    BalanceController: Object.assign(BalanceController, BalanceController),
+    DockerSystemController: Object.assign(DockerSystemController, DockerSystemController),
+    ProjectDeploymentController: Object.assign(ProjectDeploymentController, ProjectDeploymentController),
+    SubdomainController: Object.assign(SubdomainController, SubdomainController),
+    ChatController: Object.assign(ChatController, ChatController),
+    Settings: Object.assign(Settings, Settings),
+    Auth: Object.assign(Auth, Auth),
 }
 
 export default Controllers

@@ -531,12 +531,12 @@ restartForm.post = (args: { project: string | number } | [project: string | numb
 restart.form = restartForm
 
 const docker = {
-    preview,
-    start,
-    status,
-    logs,
-    stop,
-    restart,
+    preview: Object.assign(preview, preview),
+    start: Object.assign(start, start),
+    status: Object.assign(status, status),
+    logs: Object.assign(logs, logs),
+    stop: Object.assign(stop, stop),
+    restart: Object.assign(restart, restart),
 }
 
 export default docker

@@ -1,5 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
-import confirm from './confirm'
+import confirmD7e05f from './confirm'
 /**
 * @see \App\Http\Controllers\Settings\PasswordController::edit
 * @see app/Http/Controllers/Settings/PasswordController.php:18
@@ -521,13 +521,13 @@ confirmForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 confirm.form = confirmForm
 
 const password = {
-    edit,
-    update,
-    request,
-    email,
-    reset,
-    store,
-    confirm,
+    edit: Object.assign(edit, edit),
+    update: Object.assign(update, update),
+    request: Object.assign(request, request),
+    email: Object.assign(email, email),
+    reset: Object.assign(reset, reset),
+    store: Object.assign(store, store),
+    confirm: Object.assign(confirm, confirmD7e05f),
 }
 
 export default password

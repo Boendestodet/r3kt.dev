@@ -380,10 +380,10 @@ destroyForm.delete = (args: { prompt: number | { id: number } } | [prompt: numbe
 destroy.form = destroyForm
 
 const prompts = {
-    store,
-    show,
-    status,
-    destroy,
+    store: Object.assign(store, store),
+    show: Object.assign(show, show),
+    status: Object.assign(status, status),
+    destroy: Object.assign(destroy, destroy),
 }
 
 export default prompts

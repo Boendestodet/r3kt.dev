@@ -445,11 +445,11 @@ toggleResolvedForm.post = (args: { comment: number | { id: number } } | [comment
 toggleResolved.form = toggleResolvedForm
 
 const comments = {
-    index,
-    store,
-    update,
-    destroy,
-    toggleResolved,
+    index: Object.assign(index, index),
+    store: Object.assign(store, store),
+    update: Object.assign(update, update),
+    destroy: Object.assign(destroy, destroy),
+    toggleResolved: Object.assign(toggleResolved, toggleResolved),
 }
 
 export default comments

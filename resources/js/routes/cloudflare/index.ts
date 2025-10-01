@@ -81,7 +81,7 @@ testForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 test.form = testForm
 
 const cloudflare = {
-    test,
+    test: Object.assign(test, test),
 }
 
 export default cloudflare
